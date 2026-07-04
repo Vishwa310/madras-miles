@@ -44,6 +44,10 @@ export default function PlayersOpsPage() {
   const [subModal, setSubModal] = useState<{ player: PlayerRow; subs: PlayerRow[] } | null>(null);
   const [subForm, setSubForm] = useState({ substituteId: '', notes: '', effectiveDate: '' });
 
+  // Sync progress
+  const [syncLog, setSyncLog] = useState<{ player: string; status: string; activities?: number; accepted?: number; rejected?: number; reason?: string }[]>([]);
+  const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, currentPlayer: '', done: false });
+
   // Team change modal
   const [teamChangeModal, setTeamChangeModal] = useState<PlayerRow | null>(null);
   const [newTeamId, setNewTeamId] = useState('');
@@ -139,11 +143,37 @@ export default function PlayersOpsPage() {
   function deselectAll() { setSelected(new Set()); }
 
   // Bulk actions
-  async function syncSelected() {
+  async function syncPlayers(playerIds: string[]) {
     setSyncing(true);
-    await api.post('/sync');
+    setSyncLog([]);
+    setSyncProgress({ current: 0, total: playerIds.length, currentPlayer: '', done: false });
+
+    const playersToSync = players.filter(p => playerIds.includes(p.id));
+
+    for (let i = 0; i < playersToSync.length; i++) {
+      const p = playersToSync[i];
+      setSyncProgress({ current: i + 1, total: playersToSync.length, currentPlayer: p.user.name, done: false });
+
+      try {
+        const result = await api.post(`/sync/player/${p.id}`);
+        setSyncLog(prev => [...prev, { player: result.player || p.user.name, status: result.status, activities: result.activities, accepted: result.accepted, rejected: result.rejected, reason: result.reason }]);
+      } catch (err: any) {
+        setSyncLog(prev => [...prev, { player: p.user.name, status: 'error', reason: err.message }]);
+      }
+    }
+
+    setSyncProgress(prev => ({ ...prev, currentPlayer: 'Done!', done: true }));
     await loadData();
     setSyncing(false);
+  }
+
+  function syncSelected() {
+    syncPlayers(Array.from(selected));
+  }
+
+  function syncAll() {
+    const allActive = players.filter(p => p.status === 'ACTIVE').map(p => p.id);
+    syncPlayers(allActive);
   }
 
   // View activities
@@ -248,6 +278,10 @@ export default function PlayersOpsPage() {
           <p className="text-sm text-mm-text-muted mt-1">{totalFiltered} players across {filteredGroups.length} teams</p>
         </div>
         <div className="flex items-center gap-3">
+          <button onClick={syncAll} disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 bg-mm-orange/15 border border-mm-orange/30 rounded-full text-xs font-semibold text-mm-orange hover:-translate-y-0.5 transition disabled:opacity-50">
+            <span className="icon-sm">{syncing ? 'progress_activity' : 'sync'}</span> Sync All
+          </button>
           {selected.size > 0 && (
             <>
               <button onClick={syncSelected} disabled={syncing}
@@ -583,6 +617,74 @@ export default function PlayersOpsPage() {
                 <span className="icon-sm">move_up</span> Reassign
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sync Progress Dialog */}
+      {(syncLog.length > 0 || syncProgress.total > 0) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-6 w-full max-w-lg max-h-[80vh] shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display text-lg font-bold flex items-center gap-2">
+                  {!syncProgress.done && <span className="icon text-mm-orange animate-spin" style={{ fontSize: '20px' }}>progress_activity</span>}
+                  {syncProgress.done && <span className="icon text-mm-teal" style={{ fontSize: '20px' }}>check_circle</span>}
+                  Strava Sync
+                </h3>
+                <p className="text-xs text-mm-text-muted mt-1">Type: Walk, Hike · Fetching since last sync</p>
+              </div>
+              <span className="text-sm text-mm-text-secondary font-mono">{syncProgress.current}/{syncProgress.total}</span>
+            </div>
+
+            <div className="w-full h-2 rounded-full bg-mm-bg-elevated mb-2 overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-300" style={{
+                width: `${syncProgress.total > 0 ? (syncProgress.current / syncProgress.total) * 100 : 0}%`,
+                background: syncProgress.done ? '#06d6a0' : 'linear-gradient(90deg, #ff6b35, #06d6a0)',
+              }} />
+            </div>
+            <p className="text-xs text-mm-text-muted mb-4">
+              {syncProgress.currentPlayer && !syncProgress.done
+                ? `Syncing: ${syncProgress.currentPlayer}...`
+                : syncProgress.done ? '✅ Sync complete!' : 'Preparing...'}
+            </p>
+
+            <div className="flex-1 overflow-y-auto space-y-1.5 min-h-[200px] max-h-[400px] bg-mm-bg-primary rounded-xl p-3">
+              {syncLog.length === 0 && (
+                <p className="text-xs text-mm-text-muted text-center py-8">Waiting for first player...</p>
+              )}
+              {syncLog.map((log, i) => (
+                <div key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs ${
+                  log.status === 'done' ? 'bg-mm-teal/5 border border-mm-teal/10' :
+                  log.status === 'skipped' ? 'bg-mm-bg-elevated border border-mm-border' :
+                  'bg-mm-hot/5 border border-mm-hot/10'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`icon-sm ${
+                      log.status === 'done' ? 'text-mm-teal' : log.status === 'skipped' ? 'text-mm-text-muted' : 'text-mm-hot'
+                    }`}>
+                      {log.status === 'done' ? 'check_circle' : log.status === 'skipped' ? 'skip_next' : 'error'}
+                    </span>
+                    <span className="font-medium">{log.player}</span>
+                    {log.reason && <span className="text-mm-text-muted">— {log.reason}</span>}
+                  </div>
+                  {log.status === 'done' && (
+                    <div className="flex gap-2">
+                      <span className="text-mm-teal">+{log.accepted}</span>
+                      {(log.rejected || 0) > 0 && <span className="text-mm-hot">-{log.rejected}</span>}
+                      <span className="text-mm-text-muted">{log.activities} fetched</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {syncProgress.done && (
+              <button onClick={() => { setSyncLog([]); setSyncProgress({ current: 0, total: 0, currentPlayer: '', done: false }); }}
+                className="mt-4 px-5 py-2.5 gradient-hero rounded-full font-display font-semibold text-sm text-white w-full">
+                Close
+              </button>
+            )}
           </div>
         </div>
       )}
