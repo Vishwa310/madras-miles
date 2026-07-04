@@ -9,6 +9,8 @@ export default function AdminDashboard() {
   const [challenge, setChallenge] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [syncLog, setSyncLog] = useState<{ player: string; status: string; activities?: number; accepted?: number; rejected?: number; reason?: string }[]>([]);
+  const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, currentPlayer: '' });
 
   useEffect(() => { loadData(); }, []);
 
@@ -31,9 +33,36 @@ export default function AdminDashboard() {
 
   async function triggerSync() {
     setSyncing(true);
-    await api.post('/sync');
-    await api.post('/scores/compute');
-    await loadData();
+    setSyncLog([]);
+    setSyncProgress({ current: 0, total: 0, currentPlayer: '' });
+
+    try {
+      // Get list of players to sync
+      const { players } = await api.get('/sync/players');
+      setSyncProgress({ current: 0, total: players.length, currentPlayer: '' });
+
+      for (let i = 0; i < players.length; i++) {
+        const p = players[i];
+        setSyncProgress({ current: i + 1, total: players.length, currentPlayer: p.name });
+
+        if (!p.hasToken) {
+          setSyncLog(prev => [...prev, { player: p.name, status: 'skipped', reason: 'No Strava token' }]);
+          continue;
+        }
+
+        try {
+          const result = await api.post(`/sync/player/${p.playerId}`);
+          setSyncLog(prev => [...prev, { player: result.player, status: result.status, activities: result.activities, accepted: result.accepted, rejected: result.rejected, reason: result.reason }]);
+        } catch (err: any) {
+          setSyncLog(prev => [...prev, { player: p.name, status: 'error', reason: err.message }]);
+        }
+      }
+
+      setSyncProgress(prev => ({ ...prev, currentPlayer: 'Done!' }));
+      await loadData();
+    } catch (err) {
+      console.error('Sync error:', err);
+    }
     setSyncing(false);
   }
 
@@ -230,13 +259,73 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Sync overlay */}
+      {/* Sync Progress Dialog */}
       {syncing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-8 text-center shadow-2xl">
-            <span className="icon text-mm-orange animate-spin block mb-4" style={{ fontSize: '48px' }}>progress_activity</span>
-            <p className="font-display text-lg font-semibold mb-2">Syncing with Strava...</p>
-            <p className="text-sm text-mm-text-muted">Fetching activities, validating rules, computing scores</p>
+          <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-6 w-full max-w-lg max-h-[80vh] shadow-2xl flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display text-lg font-bold flex items-center gap-2">
+                  <span className="icon text-mm-orange animate-spin" style={{ fontSize: '20px' }}>progress_activity</span>
+                  Syncing with Strava
+                </h3>
+                <p className="text-xs text-mm-text-muted mt-1">Type: Walk, Hike · Period: Challenge window · Source: Strava API</p>
+              </div>
+              <span className="text-sm text-mm-text-secondary font-mono">{syncProgress.current}/{syncProgress.total}</span>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full h-2 rounded-full bg-mm-bg-elevated mb-2 overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-300" style={{
+                width: `${syncProgress.total > 0 ? (syncProgress.current / syncProgress.total) * 100 : 0}%`,
+                background: 'linear-gradient(90deg, #ff6b35, #06d6a0)',
+              }} />
+            </div>
+            <p className="text-xs text-mm-text-muted mb-4">
+              {syncProgress.currentPlayer && syncProgress.currentPlayer !== 'Done!'
+                ? `Syncing: ${syncProgress.currentPlayer}...`
+                : syncProgress.currentPlayer === 'Done!' ? '✅ All players synced!' : 'Preparing...'}
+            </p>
+
+            {/* Log */}
+            <div className="flex-1 overflow-y-auto space-y-1.5 min-h-[200px] max-h-[400px] bg-mm-bg-primary rounded-xl p-3">
+              {syncLog.length === 0 && (
+                <p className="text-xs text-mm-text-muted text-center py-8">Waiting for first player...</p>
+              )}
+              {syncLog.map((log, i) => (
+                <div key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs ${
+                  log.status === 'done' ? 'bg-mm-teal/5 border border-mm-teal/10' :
+                  log.status === 'skipped' ? 'bg-mm-bg-elevated border border-mm-border' :
+                  'bg-mm-hot/5 border border-mm-hot/10'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`icon-sm ${
+                      log.status === 'done' ? 'text-mm-teal' : log.status === 'skipped' ? 'text-mm-text-muted' : 'text-mm-hot'
+                    }`}>
+                      {log.status === 'done' ? 'check_circle' : log.status === 'skipped' ? 'skip_next' : 'error'}
+                    </span>
+                    <span className="font-medium">{log.player}</span>
+                    {log.reason && <span className="text-mm-text-muted">— {log.reason}</span>}
+                  </div>
+                  {log.status === 'done' && (
+                    <div className="flex gap-2">
+                      <span className="text-mm-teal">+{log.accepted}</span>
+                      {(log.rejected || 0) > 0 && <span className="text-mm-hot">-{log.rejected}</span>}
+                      <span className="text-mm-text-muted">{log.activities} fetched</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Close button (only when done) */}
+            {syncProgress.currentPlayer === 'Done!' && (
+              <button onClick={() => setSyncing(false)}
+                className="mt-4 px-5 py-2.5 gradient-hero rounded-full font-display font-semibold text-sm text-white w-full">
+                Close
+              </button>
+            )}
           </div>
         </div>
       )}
