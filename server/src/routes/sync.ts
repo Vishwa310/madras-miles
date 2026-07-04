@@ -8,8 +8,53 @@ export const syncRouter = Router();
 syncRouter.use(authenticate);
 
 /**
+ * POST /api/sync/start
+ * Create a sync log entry — call before starting per-player sync
+ * Admin only
+ */
+syncRouter.post('/start', authorize('ADMIN'), async (_req: Request, res: Response) => {
+  try {
+    const syncLog = await prisma.syncLog.create({
+      data: { status: 'running' },
+    });
+    return res.json({ syncLogId: syncLog.id });
+  } catch (err) {
+    console.error('Error creating sync log:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/sync/complete/:logId
+ * Finalize a sync log entry with totals
+ * Admin only
+ */
+syncRouter.post('/complete/:logId', authorize('ADMIN'), async (req: Request, res: Response) => {
+  const { playersSynced, activitiesFound, accepted, rejected, flagged, error } = req.body;
+  try {
+    const updated = await prisma.syncLog.update({
+      where: { id: req.params.logId },
+      data: {
+        status: error ? 'failed' : 'completed',
+        completedAt: new Date(),
+        playerssynced: playersSynced || 0,
+        activitiesFound: activitiesFound || 0,
+        accepted: accepted || 0,
+        rejected: rejected || 0,
+        flagged: flagged || 0,
+        error: error || null,
+      },
+    });
+    return res.json({ syncLog: updated });
+  } catch (err) {
+    console.error('Error completing sync log:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * POST /api/sync
- * Trigger a manual sync for all players
+ * Trigger a manual sync for all players (legacy — kept for compatibility)
  * Admin only
  */
 syncRouter.post('/', authorize('ADMIN'), async (_req: Request, res: Response) => {

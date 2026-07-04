@@ -40,9 +40,11 @@ export default function AdminDashboard() {
     setSyncProgress({ current: 0, total: 0, currentPlayer: '' });
 
     try {
-      // Get list of players to sync
+      const { syncLogId } = await api.post('/sync/start');
       const { players } = await api.get('/sync/players');
       setSyncProgress({ current: 0, total: players.length, currentPlayer: '' });
+
+      let playersSynced = 0, totalFetched = 0, totalAccepted = 0, totalRejected = 0;
 
       for (let i = 0; i < players.length; i++) {
         const p = players[i];
@@ -56,11 +58,16 @@ export default function AdminDashboard() {
         try {
           const result = await api.post(`/sync/player/${p.playerId}`);
           setSyncLog(prev => [...prev, { player: result.player, status: result.status, activities: result.activities, accepted: result.accepted, rejected: result.rejected, reason: result.reason }]);
+          playersSynced++;
+          totalFetched += result.activities || 0;
+          totalAccepted += result.accepted || 0;
+          totalRejected += result.rejected || 0;
         } catch (err: any) {
           setSyncLog(prev => [...prev, { player: p.name, status: 'error', reason: err.message }]);
         }
       }
 
+      await api.post(`/sync/complete/${syncLogId}`, { playersSynced, activitiesFound: totalFetched, accepted: totalAccepted, rejected: totalRejected, flagged: 0 });
       setSyncProgress(prev => ({ ...prev, currentPlayer: 'Done!' }));
       await loadData();
     } catch (err) {

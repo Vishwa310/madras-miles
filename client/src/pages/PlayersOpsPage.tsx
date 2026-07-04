@@ -152,7 +152,9 @@ export default function PlayersOpsPage() {
     setSyncLog([]);
     setSyncProgress({ current: 0, total: playerIds.length, currentPlayer: '', done: false });
 
+    const { syncLogId } = await api.post('/sync/start');
     const playersToSync = players.filter(p => playerIds.includes(p.id));
+    let playersSynced = 0, totalFetched = 0, totalAccepted = 0, totalRejected = 0;
 
     for (let i = 0; i < playersToSync.length; i++) {
       const p = playersToSync[i];
@@ -161,11 +163,16 @@ export default function PlayersOpsPage() {
       try {
         const result = await api.post(`/sync/player/${p.id}`);
         setSyncLog(prev => [...prev, { player: result.player || p.user.name, status: result.status, activities: result.activities, accepted: result.accepted, rejected: result.rejected, reason: result.reason }]);
+        playersSynced++;
+        totalFetched += result.activities || 0;
+        totalAccepted += result.accepted || 0;
+        totalRejected += result.rejected || 0;
       } catch (err: any) {
         setSyncLog(prev => [...prev, { player: p.user.name, status: 'error', reason: err.message }]);
       }
     }
 
+    await api.post(`/sync/complete/${syncLogId}`, { playersSynced, activitiesFound: totalFetched, accepted: totalAccepted, rejected: totalRejected, flagged: 0 });
     setSyncProgress(prev => ({ ...prev, currentPlayer: 'Done!', done: true }));
     await loadData();
     setSyncing(false);

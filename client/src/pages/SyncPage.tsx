@@ -31,10 +31,14 @@ export default function SyncPage() {
     setSyncProgress({ current: 0, total: 0, currentPlayer: '', done: false });
 
     try {
+      // Start sync log
+      const { syncLogId } = await api.post('/sync/start');
+
       const { players } = await api.get('/sync/players');
       setSyncProgress({ current: 0, total: players.length, currentPlayer: '', done: false });
 
       let totalFetched = 0, totalAccepted = 0, totalRejected = 0, totalSkipped = 0;
+      let playersSynced = 0;
 
       for (let i = 0; i < players.length; i++) {
         const p = players[i];
@@ -61,10 +65,20 @@ export default function SyncPage() {
           totalAccepted += result.accepted || 0;
           totalRejected += result.rejected || 0;
           totalSkipped += result.skipped || 0;
+          playersSynced++;
         } catch (err: any) {
           setSyncLog(prev => [...prev, { player: p.name, status: 'error', reason: err.message }]);
         }
       }
+
+      // Complete sync log
+      await api.post(`/sync/complete/${syncLogId}`, {
+        playersSynced,
+        activitiesFound: totalFetched,
+        accepted: totalAccepted,
+        rejected: totalRejected,
+        flagged: 0,
+      });
 
       setSyncSummary({ totalFetched, totalAccepted, totalRejected, totalSkipped });
       setSyncProgress(prev => ({ ...prev, currentPlayer: 'Done!', done: true }));
