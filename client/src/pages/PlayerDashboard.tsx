@@ -143,6 +143,66 @@ export default function PlayerDashboard() {
         <StatCard icon="cancel" label="Rejected" value={scores?.rejectedCount || rejected.length} color="text-mm-hot" />
       </div>
 
+      {/* Fun trivia — only when there's meaningful data */}
+      {accepted.length >= 3 && (() => {
+        const myKm = scores?.totalKm || totalKm;
+        const steps = Math.round(myKm * 1312);
+        const calories = Math.round(myKm * 65);
+        const filterCoffees = Math.floor(calories / 95);
+        const daysWalked = new Set(accepted.map(a => a.startDate.split('T')[0])).size;
+        const avgPace = accepted.length > 0
+          ? accepted.reduce((s, a) => s + (a.movingTimeSeconds / 60) / (a.distanceMeters / 1000), 0) / accepted.length
+          : 0;
+        const teamKm = scores?.totalKm ? myKm * 1.5 : myKm; // approximate if no team data
+
+        const destination = myKm >= 100 ? 'Pondicherry 🏖️' : myKm >= 60 ? 'Tirupati 🛕' : myKm >= 30 ? 'Kanchipuram 🏛️' : 'Mahabalipuram 🌊';
+        const paceVibe = avgPace <= 10 ? 'power walker 💪' : avgPace <= 12 ? 'steady cruiser 🚶' : avgPace <= 14 ? 'sunset stroller 🌅' : 'window shopper 🛍️';
+
+        return (
+          <div className="grid grid-cols-3 gap-3 mb-8">
+            <div className="px-4 py-3.5 rounded-xl bg-gradient-to-br from-mm-teal/5 to-transparent border border-mm-teal/10">
+              <p className="text-xs text-mm-text-secondary leading-relaxed">
+                <span className="text-base">🦶</span> <strong className="text-mm-teal">{steps.toLocaleString()}</strong> steps.
+                That's Chennai → <strong className="text-white">{destination}</strong>
+              </p>
+            </div>
+            <div className="px-4 py-3.5 rounded-xl bg-gradient-to-br from-mm-orange/5 to-transparent border border-mm-orange/10">
+              <p className="text-xs text-mm-text-secondary leading-relaxed">
+                <span className="text-base">☕</span> Burned <strong className="text-mm-orange">{calories.toLocaleString()}</strong> cal.
+                You've earned <strong className="text-white">{filterCoffees} filter coffees</strong> guilt-free.
+              </p>
+            </div>
+            <div className="px-4 py-3.5 rounded-xl bg-gradient-to-br from-purple-500/5 to-transparent border border-purple-500/10">
+              <p className="text-xs text-mm-text-secondary leading-relaxed">
+                <span className="text-base">⏱️</span> Your vibe: <strong className="text-purple-300">{paceVibe}</strong>
+                <span className="text-mm-text-muted"> ({avgPace.toFixed(1)} min/km)</span>
+              </p>
+            </div>
+            <div className="px-4 py-3.5 rounded-xl bg-gradient-to-br from-mm-gold/5 to-transparent border border-mm-gold/10">
+              <p className="text-xs text-mm-text-secondary leading-relaxed">
+                <span className="text-base">📅</span> Walked <strong className="text-mm-gold">{daysWalked} days</strong>.
+                {daysWalked >= 7 ? " Consistency machine! 🔥" : daysWalked >= 4 ? " Getting there!" : " Room to grow 💪"}
+              </p>
+            </div>
+            <div className="px-4 py-3.5 rounded-xl bg-gradient-to-br from-pink-500/5 to-transparent border border-pink-500/10">
+              <p className="text-xs text-mm-text-secondary leading-relaxed">
+                <span className="text-base">🎯</span> At this rate, you'll finish with
+                <strong className="text-pink-300"> ~{challenge ? (myKm / Math.max(1, daysWalked) * Math.ceil((new Date(challenge.endDate).getTime() - new Date(challenge.startDate).getTime()) / 86400000)).toFixed(0) : '?'} km</strong> total.
+              </p>
+            </div>
+            <div className="px-4 py-3.5 rounded-xl bg-gradient-to-br from-mm-teal/5 to-transparent border border-mm-teal/10">
+              <p className="text-xs text-mm-text-secondary leading-relaxed">
+                <span className="text-base">🏅</span>
+                {daysWalked >= 7 && <span className="inline-block px-1.5 py-0.5 bg-mm-gold/15 text-mm-gold border border-mm-gold/30 rounded text-[0.6rem] font-semibold mr-1">7-day!</span>}
+                {myKm >= 50 && <span className="inline-block px-1.5 py-0.5 bg-mm-teal/15 text-mm-teal border border-mm-teal/30 rounded text-[0.6rem] font-semibold mr-1">50km+</span>}
+                {avgPace <= 11 && <span className="inline-block px-1.5 py-0.5 bg-purple-500/15 text-purple-300 border border-purple-500/30 rounded text-[0.6rem] font-semibold mr-1">Speedy</span>}
+                {daysWalked < 7 && myKm < 50 && avgPace > 11 && <span className="text-mm-text-muted">Keep walking to unlock badges!</span>}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Challenge Progress */}
       {challenge && (() => {
         const start = new Date(challenge.startDate);
