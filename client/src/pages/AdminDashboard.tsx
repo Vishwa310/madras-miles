@@ -54,7 +54,6 @@ export default function AdminDashboard() {
   // Fun stats for mailers
   const avgKmPerPlayer = totalPlayers > 0 ? (totalKm / totalPlayers).toFixed(1) : '0';
   const topPlayer = playerRankings[0];
-  const topTeam = leaderboard[0];
 
   return (
     <div>
