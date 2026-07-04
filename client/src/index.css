@@ -1,0 +1,226 @@
+@import "tailwindcss";
+
+/* Material Symbols base style */
+.icon {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+
+.icon-sm {
+  font-family: 'Material Symbols Rounded';
+  font-size: 18px;
+  line-height: 1;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+  display: inline-block;
+}
+.icon-lg {
+  font-family: 'Material Symbols Rounded';
+  font-size: 24px;
+  line-height: 1;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+}
+.icon-xl {
+  font-family: 'Material Symbols Rounded';
+  font-size: 32px;
+  line-height: 1;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+  display: inline-block;
+}
+
+@theme {
+  /* Core Palette */
+  --color-mm-bg-primary: #0a0a0f;
+  --color-mm-bg-secondary: #12121a;
+  --color-mm-bg-card: #1a1a2e;
+  --color-mm-bg-card-hover: #222240;
+  --color-mm-bg-elevated: #252540;
+
+  /* Accent Colors */
+  --color-mm-orange: #ff6b35;
+  --color-mm-gold: #ffd166;
+  --color-mm-teal: #06d6a0;
+  --color-mm-purple: #7b2ff7;
+  --color-mm-hot: #ff006e;
+  --color-mm-blue: #00b4d8;
+
+  /* Text */
+  --color-mm-text-primary: #ffffff;
+  --color-mm-text-secondary: #a0a0b8;
+  --color-mm-text-muted: #6b6b80;
+
+  /* Border */
+  --color-mm-border: #2a2a40;
+
+  /* Fonts */
+  --font-display: 'Rajdhani', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Base styles */
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-mm-bg-primary);
+  color: var(--color-mm-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* All interactive elements get pointer cursor */
+button, a, [role="button"], select, input[type="submit"], input[type="button"] {
+  cursor: pointer;
+}
+
+/* Styled date/time inputs */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  filter: invert(1);
+  transition: opacity 0.2s;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background: rgba(255, 107, 53, 0.15);
+}
+
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+/* Select dropdown styling */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b6b80' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 6l3.5 3.5L11.5 6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+select:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+/* Input focus glow */
+input:focus,
+textarea:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+/* Button base reset + hover lift */
+button {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Ripple effect */
+button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(255,255,255,0.2) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+button:active::after {
+  opacity: 1;
+  transition: opacity 0s;
+}
+
+/* Utility classes for gradients */
+.gradient-hero {
+  background: linear-gradient(135deg, #ff6b35 0%, #ff006e 50%, #7b2ff7 100%);
+}
+
+.gradient-gold {
+  background: linear-gradient(135deg, #ffd166 0%, #ff6b35 100%);
+}
+
+.gradient-teal {
+  background: linear-gradient(135deg, #06d6a0 0%, #00b4d8 100%);
+}
+
+.text-gradient-hero {
+  background: linear-gradient(135deg, #ff6b35 0%, #ff006e 50%, #7b2ff7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Rail active state — pace marker + trailing glow */
+.rail-active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 24px;
+  background: #ff6b35;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+}
+
+.rail-active::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 12px;
+  background: #ff6b35;
+  border-radius: 3px;
+  opacity: 0.3;
+  animation: trail-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes trail-pulse {
+  0%, 100% { opacity: 0.1; height: 8px; }
+  50% { opacity: 0.4; height: 16px; }
+}

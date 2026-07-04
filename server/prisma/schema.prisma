@@ -1,0 +1,312 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum Role {
+  ADMIN
+  CAPTAIN
+  PLAYER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum PlayerSlot {
+  MAIN
+  SUBSTITUTE
+}
+
+enum PlayerStatus {
+  ACTIVE
+  STANDBY
+  RETIRED
+}
+
+enum ActivityStatus {
+  ACCEPTED
+  REJECTED
+  FLAGGED
+}
+
+enum ActivityType {
+  WALK
+  HIKE
+  RUN
+}
+
+// ============================================
+// USERS — Auth & Identity (via Strava OAuth)
+// ============================================
+
+model User {
+  id                  String    @id @default(cuid())
+  stravaAthleteId     String    @unique @map("strava_athlete_id")
+  name                String
+  email               String?
+  avatarUrl           String?   @map("avatar_url")
+  role                Role      @default(PLAYER)
+  stravaAccessToken   String?   @map("strava_access_token")
+  stravaRefreshToken  String?   @map("strava_refresh_token")
+  tokenExpiresAt      DateTime? @map("token_expires_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  player              Player?
+  captainOf           Team?     @relation("TeamCaptain")
+  reviewedActivities  Activity[] @relation("ReviewedBy")
+  substitutionsPerformed SubstitutionLog[] @relation("PerformedBy")
+
+  @@map("users")
+}
+
+// ============================================
+// TEAMS
+// ============================================
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  emblem      String?  // emoji or icon identifier
+  minPlayers  Int      @default(6) @map("min_players")
+  maxPlayers  Int      @default(20) @map("max_players")
+  minFemale   Int      @default(3) @map("min_female")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Captain relation
+  captainId   String?  @unique @map("captain_id")
+  captain     User?    @relation("TeamCaptain", fields: [captainId], references: [id])
+
+  // Relations
+  players     Player[]
+  scores      Score[]
+  substitutionLogs SubstitutionLog[]
+  weeklyRosters WeeklyRoster[]
+
+  @@map("teams")
+}
+
+// ============================================
+// PLAYERS — Team membership & Strava tracking
+// ============================================
+
+model Player {
+  id              String       @id @default(cuid())
+  gender          Gender
+  slot            PlayerSlot   @default(MAIN)
+  status          PlayerStatus @default(ACTIVE)
+  substitutedAt   DateTime?    @map("substituted_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  // User relation (1:1)
+  userId          String       @unique @map("user_id")
+  user            User         @relation(fields: [userId], references: [id])
+
+  // Team relation
+  teamId          String       @map("team_id")
+  team            Team         @relation(fields: [teamId], references: [id])
+
+  // Substitution (who replaced this player)
+  substitutedById String?      @unique @map("substituted_by_id")
+  substitutedBy   Player?      @relation("SubstitutionChain", fields: [substitutedById], references: [id])
+  replacedPlayer  Player?      @relation("SubstitutionChain")
+
+  // Relations
+  activities      Activity[]
+  scores          Score[]
+  retiredIn       SubstitutionLog[] @relation("RetiredPlayer")
+  subbedIn        SubstitutionLog[] @relation("SubstitutePlayer")
+  weeklyRosters   WeeklyRoster[]
+
+  @@map("players")
+}
+
+// ============================================
+// ACTIVITIES — Synced from Strava
+// ============================================
+
+model Activity {
+  id                  String         @id @default(cuid())
+  stravaActivityId    String         @unique @map("strava_activity_id")
+  type                ActivityType
+  distanceMeters      Float          @map("distance_meters")
+  creditedMeters      Float?         @map("credited_meters") // After daily 7km cap applied
+  durationSeconds     Int            @map("duration_seconds")
+  movingTimeSeconds   Int            @map("moving_time_seconds")
+  elapsedTimeSeconds  Int            @map("elapsed_time_seconds")
+  avgSpeed            Float          @map("avg_speed")       // m/s
+  maxSpeed            Float          @map("max_speed")       // m/s
+  startDate           DateTime       @map("start_date")
+  startLatlng         String?        @map("start_latlng")    // "lat,lng"
+  hasPolyline         Boolean        @default(false) @map("has_polyline")
+  manual              Boolean        @default(false)
+  status              ActivityStatus @default(ACCEPTED)
+  rejectionReason     String?        @map("rejection_reason")
+  syncedAt            DateTime       @default(now()) @map("synced_at")
+  createdAt           DateTime       @default(now()) @map("created_at")
+
+  // Player relation
+  playerId            String         @map("player_id")
+  player              Player         @relation(fields: [playerId], references: [id])
+
+  // Admin review
+  reviewedById        String?        @map("reviewed_by_id")
+  reviewedBy          User?          @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  reviewedAt          DateTime?      @map("reviewed_at")
+
+  @@index([playerId, startDate])
+  @@index([status])
+  @@map("activities")
+}
+
+// ============================================
+// SCORING RULES — Configurable by admin
+// ============================================
+
+model ScoringRule {
+  id        String   @id @default(cuid())
+  name      String   // e.g., "Distance Points", "Speed Bonus"
+  ruleType  String   @map("rule_type") // distance, speed_bonus, streak, early_bird, daily_cap
+  params    Json     // { points_per_unit: 2, unit_meters: 1000 }
+  isActive  Boolean  @default(true) @map("is_active")
+  priority  Int      @default(0) // evaluation order
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("scoring_rules")
+}
+
+// ============================================
+// SCORES — Computed per player per day
+// ============================================
+
+model Score {
+  id          String   @id @default(cuid())
+  totalPoints Float    @map("total_points")
+  breakdown   Json     // { distance: 6, speed_bonus: 4, streak: 2 }
+  date        DateTime @db.Date // score for this specific day
+  computedAt  DateTime @default(now()) @map("computed_at")
+
+  // Relations
+  playerId    String   @map("player_id")
+  player      Player   @relation(fields: [playerId], references: [id])
+
+  teamId      String   @map("team_id")
+  team        Team     @relation(fields: [teamId], references: [id])
+
+  @@unique([playerId, date])
+  @@index([teamId, date])
+  @@map("scores")
+}
+
+// ============================================
+// SUBSTITUTION LOG — Audit trail
+// ============================================
+
+model SubstitutionLog {
+  id                  String   @id @default(cuid())
+  effectiveFrom       DateTime @map("effective_from")
+  notes               String?
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  // Team
+  teamId              String   @map("team_id")
+  team                Team     @relation(fields: [teamId], references: [id])
+
+  // Retired player
+  retiredPlayerId     String   @map("retired_player_id")
+  retiredPlayer       Player   @relation("RetiredPlayer", fields: [retiredPlayerId], references: [id])
+
+  // Substitute player
+  substitutePlayerId  String   @map("substitute_player_id")
+  substitutePlayer    Player   @relation("SubstitutePlayer", fields: [substitutePlayerId], references: [id])
+
+  // Admin who performed this
+  performedById       String   @map("performed_by_id")
+  performedBy         User     @relation("PerformedBy", fields: [performedById], references: [id])
+
+  @@map("substitution_log")
+}
+
+// ============================================
+// CHALLENGE CONFIG — Global challenge settings
+// ============================================
+
+model ChallengeConfig {
+  id                        String   @id @default(cuid())
+  name                      String   // e.g., "Madras Miles 2026"
+  startDate                 DateTime @map("start_date")
+  endDate                   DateTime @map("end_date")
+  allowedActivityTypes      Json     @default("[\"WALK\"]") @map("allowed_activity_types")
+  minDailyKm               Float    @default(0) @map("min_daily_km")
+  maxDailyKm               Float    @default(7) @map("max_daily_km")
+  maxDailyActivities       Int      @default(99) @map("max_daily_activities")
+  minPaceMinPerKm          Float    @default(9) @map("min_pace_min_per_km")
+  maxPaceMinPerKm          Float    @default(16) @map("max_pace_min_per_km")
+  minDistancePerActivity   Float    @default(1000) @map("min_distance_per_activity") // meters
+  maxPlayersWeek1          Int      @default(12) @map("max_players_week1")
+  maxPlayersWeek2          Int      @default(15) @map("max_players_week2")
+  maxPlayersWeek3          Int      @default(18) @map("max_players_week3")
+  minFemalePerWeek         Int      @default(3) @map("min_female_per_week")
+  isActive                 Boolean  @default(true) @map("is_active")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  @@map("challenge_config")
+}
+
+// ============================================
+// WEEKLY ROSTER — Which players are active each week
+// ============================================
+
+model WeeklyRoster {
+  id          String   @id @default(cuid())
+  weekNumber  Int      @map("week_number") // 1, 2, or 3
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Player relation
+  playerId    String   @map("player_id")
+  player      Player   @relation(fields: [playerId], references: [id])
+
+  // Team relation (for quick queries)
+  teamId      String   @map("team_id")
+  team        Team     @relation(fields: [teamId], references: [id])
+
+  @@unique([playerId, weekNumber])
+  @@index([teamId, weekNumber])
+  @@map("weekly_roster")
+}
+
+// ============================================
+// SYNC LOG — Track sync runs
+// ============================================
+
+model SyncLog {
+  id              String   @id @default(cuid())
+  startedAt       DateTime @default(now()) @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  playerssynced   Int      @default(0) @map("players_synced")
+  activitiesFound Int      @default(0) @map("activities_found")
+  accepted        Int      @default(0)
+  rejected        Int      @default(0)
+  flagged         Int      @default(0)
+  status          String   @default("running") // running, completed, failed
+  error           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("sync_log")
+}
