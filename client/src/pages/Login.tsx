@@ -113,7 +113,7 @@ export default function Login() {
         </a>
 
         <p className="text-[0.65rem] text-white/20 mt-6 text-center max-w-sm">
-          Your admin must register you first. Can't login? Bug your team lead — not us. 🤷
+          Connect your Strava account to join the challenge.
         </p>
       </div>
 
