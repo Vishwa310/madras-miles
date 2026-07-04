@@ -136,7 +136,10 @@ export default function AppLayout() {
             <span className="font-display font-semibold text-mm-orange uppercase tracking-wide text-sm">{pageTitle}</span>
           </div>
           <div className="absolute left-1/2 -translate-x-1/2">
-            <span className="font-display text-xs font-bold uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-r from-mm-orange via-pink-500 to-purple-500" style={{ textShadow: '0 0 20px rgba(255,107,53,0.4), 0 0 40px rgba(255,0,110,0.2)' }}>Madras Walkathon Challenge</span>
+            <span className="font-display text-xs font-bold uppercase tracking-[0.3em] relative">
+              <span className="absolute inset-0 blur-sm bg-gradient-to-r from-mm-orange via-pink-500 to-purple-500 bg-clip-text text-transparent opacity-60">Madras Walkathon Challenge</span>
+              <span className="relative bg-gradient-to-r from-mm-orange via-pink-500 to-purple-500 bg-clip-text text-transparent">Madras Walkathon Challenge</span>
+            </span>
           </div>
           <div className="flex items-center gap-4">
             {/* View switcher (admin only) */}
