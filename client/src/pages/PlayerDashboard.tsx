@@ -35,8 +35,10 @@ export default function PlayerDashboard() {
     const userData = await api.get('/auth/me');
     setUser(userData.user);
 
+    // Fetch only this player's activities
+    const playerId = userData.user.player?.id;
     const [actData, challengeData] = await Promise.all([
-      api.get('/activities?limit=20'),
+      playerId ? api.get(`/activities?playerId=${playerId}&limit=50`) : Promise.resolve({ activities: [] }),
       api.get('/challenge'),
     ]);
     setActivities(actData.activities || []);
