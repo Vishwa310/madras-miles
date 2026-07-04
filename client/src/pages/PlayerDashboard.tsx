@@ -1,3 +1,4 @@
+import { PageLoader } from '../lib/loaders';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
@@ -47,7 +48,7 @@ export default function PlayerDashboard() {
     }
   }
 
-  if (!user) return <div className="text-mm-text-muted">Loading...</div>;
+  if (!user) return <PageLoader />;
 
   const accepted = (activities || []).filter(a => a.status === 'ACCEPTED');
   const rejected = (activities || []).filter(a => a.status === 'REJECTED');

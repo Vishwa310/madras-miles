@@ -1,3 +1,4 @@
+import { PageLoader } from '../lib/loaders';
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
@@ -28,6 +29,7 @@ export default function PlayersOpsPage() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Unassigned users
   const [unassigned, setUnassigned] = useState<any[]>([]);
@@ -93,6 +95,7 @@ export default function PlayersOpsPage() {
       statsMap.set(p.id, { weeks, total });
     }
     setPlayerStats(statsMap);
+    setLoading(false);
     setNumWeeks(totalWeeks);
 
     // Build team groups
@@ -116,6 +119,7 @@ export default function PlayersOpsPage() {
     setTeamGroups(groups);
   }
 
+  if (loading) return <PageLoader />;
   // Search filter
   const filteredGroups = teamGroups.map(g => ({
     ...g,

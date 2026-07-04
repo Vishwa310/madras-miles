@@ -1,3 +1,4 @@
+import { PageLoader } from '../lib/loaders';
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -81,6 +82,7 @@ export default function ActivitiesPage() {
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { setPage(1); }, [filter]);
   useEffect(() => { loadActivities(); }, [filter, page]);
@@ -91,6 +93,7 @@ export default function ActivitiesPage() {
     if (filter) params.set('status', filter);
     const data = await api.get(`/activities?${params}`);
     setActivities(data.activities || []);
+    setLoading(false);
     setTotal(data.total ?? data.activities?.length ?? 0);
   }
 
@@ -104,6 +107,7 @@ export default function ActivitiesPage() {
     loadActivities();
   }
 
+  if (loading) return <PageLoader />;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const isAdmin = user?.role === 'ADMIN';
   const weeks = groupByWeek(activities);

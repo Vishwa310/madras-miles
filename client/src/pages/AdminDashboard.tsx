@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { PageLoader } from '../lib/loaders';
 
 export default function AdminDashboard() {
   const [teams, setTeams] = useState<any[]>([]);
@@ -9,6 +10,7 @@ export default function AdminDashboard() {
   const [challenge, setChallenge] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [syncLog, setSyncLog] = useState<{ player: string; status: string; activities?: number; accepted?: number; rejected?: number; reason?: string }[]>([]);
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, currentPlayer: '' });
 
@@ -29,6 +31,7 @@ export default function AdminDashboard() {
     setSyncStatus(syncD.lastSync);
     setChallenge(chalD.config);
     setActivities(actD.activities);
+    setLoading(false);
   }
 
   async function triggerSync() {
@@ -65,6 +68,9 @@ export default function AdminDashboard() {
     }
     setSyncing(false);
   }
+
+  // Loading state
+  if (loading) return <PageLoader />;
 
   // Computed stats
   const totalPlayers = teams.reduce((s, t) => s + t.playerCount, 0);

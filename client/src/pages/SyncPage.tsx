@@ -1,8 +1,10 @@
+import { PageLoader } from '../lib/loaders';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
 export default function SyncPage() {
   const [syncing, setSyncing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<any[]>([]);
   const [syncLog, setSyncLog] = useState<{ player: string; status: string; activities?: number; accepted?: number; rejected?: number; skipped?: number; reason?: string }[]>([]);
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, currentPlayer: '', done: false });
@@ -18,6 +20,7 @@ export default function SyncPage() {
     ]);
     setHistory(historyData.history || []);
     setChallenge(chalData.config);
+    setLoading(false);
   }
 
   async function triggerSync() {
@@ -71,6 +74,7 @@ export default function SyncPage() {
     setSyncing(false);
   }
 
+  if (loading) return <PageLoader />;
   const startDate = challenge ? new Date(challenge.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
   const endDate = challenge ? new Date(challenge.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 

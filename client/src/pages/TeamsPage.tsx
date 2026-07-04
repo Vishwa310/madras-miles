@@ -1,8 +1,10 @@
+import { PageLoader } from '../lib/loaders';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
 export default function TeamsPage() {
   const [teams, setTeams] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: '', emblem: '', minPlayers: 6, maxPlayers: 20, minFemale: 3 });
 
@@ -11,6 +13,7 @@ export default function TeamsPage() {
   async function loadTeams() {
     const data = await api.get('/teams');
     setTeams(data.teams);
+    setLoading(false);
   }
 
   async function createTeam(e: React.FormEvent) {
@@ -46,6 +49,7 @@ export default function TeamsPage() {
       });
   }
 
+  if (loading) return <PageLoader />;
   return (
     <div>
       <div className="flex items-center justify-between mb-8">

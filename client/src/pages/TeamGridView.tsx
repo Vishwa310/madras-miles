@@ -1,3 +1,4 @@
+import { GridLoader } from '../lib/loaders';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
@@ -15,6 +16,7 @@ export default function TeamGridView() {
   const [playerDays, setPlayerDays] = useState<Map<string, Map<string, DayCell>>>(new Map());
   const [dates, setDates] = useState<string[]>([]);
   const [challenge, setChallenge] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<{ player: any; date: string; cell: DayCell } | null>(null);
 
   async function overrideActivity(actId: string, action: 'approve' | 'reject') {
@@ -82,6 +84,7 @@ export default function TeamGridView() {
     }
 
     setPlayerDays(pdMap);
+    setLoading(false);
   }
 
   function handleTeamChange(teamId: string) {
@@ -100,6 +103,7 @@ export default function TeamGridView() {
     return 'bg-mm-hot/5 border-mm-border';
   }
 
+  if (loading) return <GridLoader />;
   // Show all dates — horizontal scroll handles overflow
   const visibleDates = dates;
 
