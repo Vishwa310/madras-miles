@@ -103,12 +103,18 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
     }
 
     // Fetch only since last sync for this player
-    const lastSynced = await prisma.activity.findFirst({
-      where: { playerId: player.id },
-      orderBy: { startDate: 'desc' },
-      select: { startDate: true },
-    });
-    const afterDate = lastSynced ? new Date(lastSynced.startDate.getTime() - 86400000) : challenge.startDate;
+    const afterOverride = req.query.after as string | undefined;
+    let afterDate: Date;
+    if (afterOverride) {
+      afterDate = new Date(afterOverride);
+    } else {
+      const lastSynced = await prisma.activity.findFirst({
+        where: { playerId: player.id },
+        orderBy: { startDate: 'desc' },
+        select: { startDate: true },
+      });
+      afterDate = lastSynced ? new Date(lastSynced.startDate.getTime() - 86400000) : challenge.startDate;
+    }
     const afterTimestamp = Math.floor(afterDate.getTime() / 1000);
 
     let allActivities: any[] = [];

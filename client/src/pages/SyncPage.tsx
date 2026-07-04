@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 export default function SyncPage() {
   const [syncing, setSyncing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [syncAfter, setSyncAfter] = useState('');
   const [history, setHistory] = useState<any[]>([]);
   const [syncLog, setSyncLog] = useState<{ player: string; status: string; activities?: number; accepted?: number; rejected?: number; skipped?: number; reason?: string }[]>([]);
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, currentPlayer: '', done: false });
@@ -46,7 +47,7 @@ export default function SyncPage() {
         }
 
         try {
-          const result = await api.post(`/sync/player/${p.playerId}`);
+          const result = await api.post(`/sync/player/${p.playerId}${syncAfter ? `?after=${syncAfter}` : ''}`);
           setSyncLog(prev => [...prev, {
             player: result.player || p.name,
             status: result.status,
@@ -75,7 +76,6 @@ export default function SyncPage() {
   }
 
   if (loading) return <PageLoader />;
-  const startDate = challenge ? new Date(challenge.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
   const endDate = challenge ? new Date(challenge.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
   return (
@@ -85,11 +85,19 @@ export default function SyncPage() {
           <h1 className="font-display text-2xl font-bold uppercase">Sync Control</h1>
           <p className="text-sm text-mm-text-muted mt-1">Manage Strava sync for all active players</p>
         </div>
-        <button onClick={triggerSync} disabled={syncing}
-          className="flex items-center gap-2 px-5 py-2.5 gradient-hero rounded-full font-display font-semibold text-sm uppercase tracking-wide text-white shadow-lg shadow-mm-orange/30 hover:-translate-y-0.5 transition disabled:opacity-50">
-          <span className={`icon-sm ${syncing ? 'animate-spin' : ''}`}>{syncing ? 'progress_activity' : 'sync'}</span>
-          {syncing ? 'Syncing...' : 'Sync Now'}
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-mm-text-muted">Sync after:</label>
+            <input type="date" value={syncAfter} onChange={e => setSyncAfter(e.target.value)}
+              className="px-3 py-2 bg-mm-bg-card border border-mm-border rounded-lg text-xs focus:border-mm-orange outline-none" />
+            {syncAfter && <button onClick={() => setSyncAfter('')} className="text-xs text-mm-text-muted hover:text-white">✕</button>}
+          </div>
+          <button onClick={triggerSync} disabled={syncing}
+            className="flex items-center gap-2 px-5 py-2.5 gradient-hero rounded-full font-display font-semibold text-sm uppercase tracking-wide text-white shadow-lg shadow-mm-orange/30 hover:-translate-y-0.5 transition disabled:opacity-50">
+            <span className={`icon-sm ${syncing ? 'animate-spin' : ''}`}>{syncing ? 'progress_activity' : 'sync'}</span>
+            {syncing ? 'Syncing...' : 'Sync Now'}
+          </button>
+        </div>
       </div>
 
       {/* Sync history */}
@@ -135,7 +143,7 @@ export default function SyncPage() {
             {/* Criteria info */}
             <div className="flex flex-wrap gap-3 mb-4 text-xs">
               <span className="px-2.5 py-1 bg-mm-bg-elevated rounded-lg border border-mm-border text-mm-text-secondary">
-                📅 Fetching after: <strong className="text-white">{startDate}</strong>
+                📅 Fetching after: <strong className="text-white">{syncAfter || 'Last synced (auto)'}</strong>
               </span>
               <span className="px-2.5 py-1 bg-mm-bg-elevated rounded-lg border border-mm-border text-mm-text-secondary">
                 🏁 Until: <strong className="text-white">{endDate}</strong>
