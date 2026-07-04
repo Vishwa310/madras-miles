@@ -418,11 +418,11 @@ export default function PlayersOpsPage() {
                             {stats.weeks.map((w, i) => (
                               <React.Fragment key={i}>
                                 <td className="px-1 py-2.5 text-center text-[0.6rem] text-mm-text-muted border-l border-mm-border/30">{w.acts || '–'}</td>
-                                <td className="px-1 py-2.5 text-center text-[0.6rem] font-semibold text-mm-teal">{w.km > 0 ? w.km.toFixed(1) : '–'}</td>
+                                <td className="px-1 py-2.5 text-center text-[0.6rem] font-semibold text-mm-teal">{w.km > 0 ? w.km.toFixed(2) : '–'}</td>
                               </React.Fragment>
                             ))}
                             <td className="px-1 py-2.5 text-center text-[0.6rem] text-mm-text-muted border-l border-mm-border/30 font-semibold">{stats.total.acts || '–'}</td>
-                            <td className="px-1 py-2.5 text-center text-[0.6rem] font-bold text-mm-gold">{stats.total.km > 0 ? stats.total.km.toFixed(1) : '–'}</td>
+                            <td className="px-1 py-2.5 text-center text-[0.6rem] font-bold text-mm-gold">{stats.total.km > 0 ? stats.total.km.toFixed(2) : '–'}</td>
                           </>
                         );
                       })()}

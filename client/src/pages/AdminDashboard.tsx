@@ -229,6 +229,17 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Sync overlay */}
+      {syncing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-8 text-center shadow-2xl">
+            <span className="icon text-mm-orange animate-spin block mb-4" style={{ fontSize: '48px' }}>progress_activity</span>
+            <p className="font-display text-lg font-semibold mb-2">Syncing with Strava...</p>
+            <p className="text-sm text-mm-text-muted">Fetching activities, validating rules, computing scores</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

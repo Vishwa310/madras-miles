@@ -129,11 +129,34 @@ async function syncSinglePlayer(
     });
   }
 
-  // Fetch activities since challenge start
-  const afterTimestamp = Math.floor(challenge.startDate.getTime() / 1000);
-  const activities = await fetchStravaActivities(tokenResult.accessToken, afterTimestamp);
+  // Fetch activities since challenge start (or last sync for efficiency)
+  const lastSynced = await prisma.activity.findFirst({
+    where: { playerId: player.id },
+    orderBy: { startDate: 'desc' },
+    select: { startDate: true },
+  });
 
-  for (const rawActivity of activities) {
+  // If we have synced before, only fetch activities after the last one (minus 1 day buffer)
+  const afterDate = lastSynced
+    ? new Date(lastSynced.startDate.getTime() - 86400000) // 1 day buffer
+    : challenge.startDate;
+  const afterTimestamp = Math.floor(afterDate.getTime() / 1000);
+
+  // Fetch all pages
+  let allActivities: any[] = [];
+  let page = 1;
+  while (true) {
+    const batch = await fetchStravaActivities(tokenResult.accessToken, afterTimestamp, page, 50);
+    if (!batch || batch.length === 0) break;
+    // Pre-filter: only keep Walk and Hike types (skip Run, Ride, Swim, etc.)
+    const relevant = batch.filter((a: any) => a.type === 'Walk' || a.type === 'Hike');
+    allActivities = allActivities.concat(relevant);
+    if (batch.length < 50) break; // last page
+    page++;
+    if (page > 10) break; // safety cap
+  }
+
+  for (const rawActivity of allActivities) {
     result.activitiesFound++;
 
     // Skip if already synced

@@ -172,7 +172,7 @@ export default function ActivitiesPage() {
                     <td className="px-5 py-2.5 text-sm text-mm-text-secondary">
                       {new Date(a.startDate).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
                     </td>
-                    <td className="px-5 py-2.5 text-sm font-display font-semibold text-mm-teal">{(a.distanceMeters / 1000).toFixed(1)} km</td>
+                    <td className="px-5 py-2.5 text-sm font-display font-semibold text-mm-teal">{(a.distanceMeters / 1000).toFixed(2)} km</td>
                     <td className="px-5 py-2.5 text-sm text-mm-text-secondary">{(a.avgSpeed * 3.6).toFixed(1)} km/h</td>
                     <td className="px-5 py-2.5">
                       <span className={`px-2 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase border ${

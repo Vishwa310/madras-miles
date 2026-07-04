@@ -138,7 +138,7 @@ export default function PlayerDashboard() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <StatCard icon="route" label="Total KM" value={scores?.totalKm || totalKm.toFixed(1)} color="text-mm-teal" />
+        <StatCard icon="route" label="Total KM" value={(scores?.totalKm || totalKm).toFixed(2)} color="text-mm-teal" />
         <StatCard icon="check_circle" label="Accepted" value={scores?.totalActivities || accepted.length} color="text-mm-teal" />
         <StatCard icon="cancel" label="Rejected" value={scores?.rejectedCount || rejected.length} color="text-mm-hot" />
       </div>
@@ -153,7 +153,6 @@ export default function PlayerDashboard() {
         const avgPace = accepted.length > 0
           ? accepted.reduce((s, a) => s + (a.movingTimeSeconds / 60) / (a.distanceMeters / 1000), 0) / accepted.length
           : 0;
-        const teamKm = scores?.totalKm ? myKm * 1.5 : myKm; // approximate if no team data
 
         const destination = myKm >= 100 ? 'Pondicherry 🏖️' : myKm >= 60 ? 'Tirupati 🛕' : myKm >= 30 ? 'Kanchipuram 🏛️' : 'Mahabalipuram 🌊';
         const paceVibe = avgPace <= 10 ? 'power walker 💪' : avgPace <= 12 ? 'steady cruiser 🚶' : avgPace <= 14 ? 'sunset stroller 🌅' : 'window shopper 🛍️';
@@ -245,7 +244,7 @@ export default function PlayerDashboard() {
           <div className="flex items-end gap-3 h-40">
             {weekData.map((day, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                <span className="text-xs font-mono text-mm-text-muted">{day.km > 0 ? day.km.toFixed(1) : ''}</span>
+                <span className="text-xs font-mono text-mm-text-muted">{day.km > 0 ? day.km.toFixed(2) : ''}</span>
                 <div className="w-full rounded-t-md transition-all" style={{
                   height: `${Math.max(day.km / 7 * 100, 4)}%`,
                   background: day.isToday ? 'linear-gradient(180deg, #ff6b35, #ff006e)' : 'linear-gradient(180deg, #06d6a0, #00b4d8)',
@@ -271,12 +270,12 @@ export default function PlayerDashboard() {
               </defs>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-display text-2xl font-bold">{weekData[6]?.km.toFixed(1) || '0'}</span>
+              <span className="font-display text-2xl font-bold">{weekData[6]?.km.toFixed(2) || '0'}</span>
               <span className="text-[0.6rem] text-mm-text-muted uppercase">of 7 km</span>
             </div>
           </div>
           <div className="mt-3 text-xs text-mm-text-muted">
-            {(7 - (weekData[6]?.km || 0)).toFixed(1)} km remaining
+            {(7 - (weekData[6]?.km || 0)).toFixed(2)} km remaining
           </div>
         </div>
       </div>
@@ -291,7 +290,7 @@ export default function PlayerDashboard() {
                 {a.status === 'ACCEPTED' ? 'check_circle' : a.status === 'REJECTED' ? 'cancel' : 'warning'}
               </span>
               <div className="flex-1">
-                <div className="text-sm">{(a.distanceMeters / 1000).toFixed(1)} km · {(a.avgSpeed * 3.6).toFixed(1)} km/h</div>
+                <div className="text-sm">{(a.distanceMeters / 1000).toFixed(2)} km · {(a.avgSpeed * 3.6).toFixed(1)} km/h</div>
                 <div className="text-xs text-mm-text-muted">{new Date(a.startDate).toLocaleDateString()}</div>
               </div>
               {a.rejectionReason && (

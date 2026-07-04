@@ -198,11 +198,11 @@ export default function TeamGridView() {
                             className={`w-full h-9 rounded-md border flex flex-col items-center justify-center transition hover:scale-105 hover:shadow-md ${getCellColor(cell)}`}
                           >
                             <span className="text-[0.65rem] font-display font-bold text-white leading-tight">
-                              {cell.scoredKm.toFixed(1)}
+                              {cell.scoredKm.toFixed(2)}
                             </span>
                             {cell.totalKm !== cell.scoredKm && (
                               <span className="text-[0.5rem] text-mm-text-muted leading-tight">
-                                /{cell.totalKm.toFixed(1)}
+                                /{cell.totalKm.toFixed(2)}
                               </span>
                             )}
                           </button>
@@ -212,7 +212,7 @@ export default function TeamGridView() {
 
                     {/* Total */}
                     <td className="px-4 py-2 text-center border-b border-l border-mm-border">
-                      <span className="font-display font-bold text-sm text-mm-teal">{totalScored.toFixed(1)}</span>
+                      <span className="font-display font-bold text-sm text-mm-teal">{totalScored.toFixed(2)}</span>
                       <span className="text-[0.55rem] text-mm-text-muted ml-0.5">km</span>
                     </td>
                   </tr>

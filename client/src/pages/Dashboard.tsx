@@ -120,7 +120,7 @@ export default function Dashboard() {
             {activities.map((act) => (
               <div key={act.id} className="flex items-center justify-between py-3 border-b border-mm-border last:border-0">
                 <div>
-                  <div className="text-sm font-medium">{(act.distanceMeters / 1000).toFixed(1)} km</div>
+                  <div className="text-sm font-medium">{(act.distanceMeters / 1000).toFixed(2)} km</div>
                   <div className="text-xs text-mm-text-muted">
                     {new Date(act.startDate).toLocaleDateString()} · {(act.avgSpeed * 3.6).toFixed(1)} km/h
                   </div>
