@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "madrasmiles"
-  }
+    "default": "madras-walkathon",
+    "prod": "madras-walkathon"
+  },
+  "targets": {},
+  "etags": {}
 }

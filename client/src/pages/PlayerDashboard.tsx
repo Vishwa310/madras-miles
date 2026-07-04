@@ -109,7 +109,7 @@ export default function PlayerDashboard() {
           </div>
         ) : (
           <div className="mt-4 px-5 py-4 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
-            <p className="text-sm text-mm-text-muted">Welcome to Madras Miles!</p>
+            <p className="text-sm text-mm-text-muted">Welcome to Madras Walkathon!</p>
             <p key={quoteIndex} className="text-white/40 italic text-xs mt-2 animate-[fadeQuote_5s_ease-in-out_infinite]">
               💡 {PLAYER_QUOTES[quoteIndex]}
             </p>

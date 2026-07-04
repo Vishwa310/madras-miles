@@ -70,7 +70,7 @@ export default function ChallengePage() {
         {/* Event Details */}
         <Section title="Event Details" icon="event">
           <div className="grid grid-cols-3 gap-4">
-            <Field label="Challenge Name" value={form.name} onChange={v => setForm({...form, name: v})} placeholder="Madras Miles 2026" />
+            <Field label="Challenge Name" value={form.name} onChange={v => setForm({...form, name: v})} placeholder="Madras Walkathon 2026" />
             <Field label="Start Date" type="date" value={form.startDate} onChange={v => setForm({...form, startDate: v})} />
             <Field label="End Date (3 weeks)" type="date" value={form.endDate} onChange={v => setForm({...form, endDate: v})} />
           </div>

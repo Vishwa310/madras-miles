@@ -37,7 +37,7 @@ app.post('/api/test-post', (_req, res) => {
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
-    app: 'Madras Miles API',
+    app: 'Madras Walkathon API',
     timestamp: new Date().toISOString(),
   });
 });
@@ -56,7 +56,7 @@ app.use('/api/export', exportRouter);
 
 // Start server
 app.listen(config.port, () => {
-  console.log(`🏃 Madras Miles API running on port ${config.port}`);
+  console.log(`🏃 Madras Walkathon API running on port ${config.port}`);
   console.log(`   Environment: ${config.nodeEnv}`);
 });
 
