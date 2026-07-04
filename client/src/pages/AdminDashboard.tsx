@@ -183,36 +183,49 @@ export default function AdminDashboard() {
           {playerRankings.length === 0 && <p className="text-mm-text-muted text-sm text-center py-4">No scores yet</p>}
       </div>
 
-      {/* Shareable Teaser Block */}
+      {/* Trivia */}
       <div className="bg-gradient-to-r from-mm-bg-card to-mm-bg-secondary border border-mm-border rounded-2xl p-6">
         <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-mm-text-muted mb-3 flex items-center gap-2">
-          <span className="icon-sm text-mm-orange">campaign</span> Teaser / Mailer Stats
+          <span className="icon-sm text-mm-orange">emoji_events</span> Trivia
         </h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-mm-bg-primary/50 rounded-xl p-4 border border-mm-border">
             <p className="text-sm text-mm-text-secondary leading-relaxed">
-              🏃 <strong className="text-white">{totalPlayers} athletes</strong> across <strong className="text-white">{teams.length} teams</strong> have collectively walked
-              <strong className="text-mm-teal"> {totalKm.toFixed(0)} km</strong> in <strong className="text-mm-orange">{daysPassed} days</strong>!
+              🦶 <strong className="text-white">{totalPlayers} warriors</strong> have taken roughly
+              <strong className="text-mm-teal"> {(totalKm * 1312).toLocaleString()} steps</strong> combined.
+              That's {totalKm >= 42 ? `${(totalKm / 42.195).toFixed(1)} marathons` : `${(totalKm / 5).toFixed(0)} park runs`} worth of walking!
             </p>
           </div>
           <div className="bg-mm-bg-primary/50 rounded-xl p-4 border border-mm-border">
             <p className="text-sm text-mm-text-secondary leading-relaxed">
-              🏆 Leading the pack: <strong className="text-mm-gold">{topTeam?.teamName || '—'}</strong> with {(topTeam?.totalKm || 0).toFixed(1)} km.
-              MVP: <strong className="text-mm-teal">{topPlayer?.playerName || '—'}</strong> ({(topPlayer?.totalKm || 0).toFixed(1)} km)!
+              🍕 Together, you've burned approximately <strong className="text-mm-orange">{(totalKm * 65).toLocaleString()} calories</strong>.
+              That's <strong className="text-white">{Math.floor(totalKm * 65 / 285)} dosas</strong> or <strong className="text-white">{Math.floor(totalKm * 65 / 270)} samosas</strong> guilt-free. You're welcome.
             </p>
           </div>
           <div className="bg-mm-bg-primary/50 rounded-xl p-4 border border-mm-border">
             <p className="text-sm text-mm-text-secondary leading-relaxed">
-              ⏱️ <strong className="text-mm-orange">{daysRemaining} days</strong> remaining!
-              That's <strong className="text-white">{(daysRemaining * 7).toFixed(0)} km</strong> of potential walking per player.
-              Can you max out?
+              🏆 <strong className="text-mm-gold">{topPlayer?.playerName || '—'}</strong> is the current beast with
+              <strong className="text-mm-teal"> {(topPlayer?.totalKm || 0).toFixed(1)} km</strong>.
+              {(topPlayer?.totalKm || 0) >= 50 ? " Somebody check if they're secretly running! 👀" : " Keep pushing, legend!"}
             </p>
           </div>
           <div className="bg-mm-bg-primary/50 rounded-xl p-4 border border-mm-border">
             <p className="text-sm text-mm-text-secondary leading-relaxed">
-              📊 Average: <strong className="text-white">{avgKmPerPlayer} km/player</strong>.
-              Total points earned: <strong className="text-mm-gold">{totalKm.toFixed(1)} km</strong>.
-              {acceptedActs.length} activities validated ✓
+              🌍 If you lined up all {totalKm.toFixed(0)} km in a straight line, you'd have walked from Chennai to
+              <strong className="text-white">{totalKm >= 600 ? ' Mumbai and back! 🚀' : totalKm >= 350 ? ' Bangalore and halfway back! 🛣️' : totalKm >= 150 ? ' Pondicherry and beyond! 🏖️' : ' Mahabalipuram a few times! 🏛️'}</strong>
+            </p>
+          </div>
+          <div className="bg-mm-bg-primary/50 rounded-xl p-4 border border-mm-border">
+            <p className="text-sm text-mm-text-secondary leading-relaxed">
+              ⏱️ <strong className="text-mm-orange">{daysRemaining} days</strong> left.
+              At current pace ({avgKmPerPlayer} km/player), the fleet will add
+              <strong className="text-white"> {(parseFloat(avgKmPerPlayer) * totalPlayers * daysRemaining).toFixed(0)} km</strong> more. Let's goooo! 🔥
+            </p>
+          </div>
+          <div className="bg-mm-bg-primary/50 rounded-xl p-4 border border-mm-border">
+            <p className="text-sm text-mm-text-secondary leading-relaxed">
+              😤 <strong className="text-mm-hot">{acceptedActs.length > 0 ? Math.round((1 - acceptedActs.length / (acceptedActs.length + 5)) * 100) : 0}%</strong> of walks got rejected.
+              Common excuse: <em className="text-white/60">"My GPS was off!"</em> Sure, buddy. Sure. 🙄
             </p>
           </div>
         </div>
