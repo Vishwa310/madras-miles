@@ -40,8 +40,8 @@ export default function AdminDashboard() {
     setSyncProgress({ current: 0, total: 0, currentPlayer: '' });
 
     try {
-      const { syncLogId } = await api.post('/sync/start');
       const { players } = await api.get('/sync/players');
+      const { syncLogId } = await api.post('/sync/start', { type: 'all', playerCount: players.length, afterDate: null });
       setSyncProgress({ current: 0, total: players.length, currentPlayer: '' });
 
       let playersSynced = 0, totalFetched = 0, totalAccepted = 0, totalRejected = 0;

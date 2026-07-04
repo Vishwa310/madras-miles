@@ -32,9 +32,12 @@ export default function SyncPage() {
 
     try {
       // Start sync log
-      const { syncLogId } = await api.post('/sync/start');
-
       const { players } = await api.get('/sync/players');
+      const { syncLogId } = await api.post('/sync/start', {
+        type: 'all',
+        playerCount: players.length,
+        afterDate: syncAfter || null,
+      });
       setSyncProgress({ current: 0, total: players.length, currentPlayer: '', done: false });
 
       let totalFetched = 0, totalAccepted = 0, totalRejected = 0, totalSkipped = 0;
@@ -124,7 +127,21 @@ export default function SyncPage() {
                 <span className={`w-2 h-2 rounded-full ${h.status === 'completed' ? 'bg-mm-teal' : h.status === 'failed' ? 'bg-mm-hot' : 'bg-mm-gold animate-pulse'}`} />
                 <div>
                   <div className="text-sm">{new Date(h.startedAt).toLocaleString()}</div>
-                  <div className="text-xs text-mm-text-muted">{h.playerssynced} players synced</div>
+                  <div className="text-xs text-mm-text-muted flex items-center gap-2">
+                    <span>{h.playerssynced} players</span>
+                    {h.params && (
+                      <>
+                        <span className="text-mm-border">·</span>
+                        <span className="capitalize">{h.params.type === 'all' ? 'Sync All' : `${h.params.playerCount} selected`}</span>
+                        {h.params.afterDate && (
+                          <>
+                            <span className="text-mm-border">·</span>
+                            <span>After: {h.params.afterDate}</span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-3">

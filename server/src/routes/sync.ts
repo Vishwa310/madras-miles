@@ -12,10 +12,14 @@ syncRouter.use(authenticate);
  * Create a sync log entry — call before starting per-player sync
  * Admin only
  */
-syncRouter.post('/start', authorize('ADMIN'), async (_req: Request, res: Response) => {
+syncRouter.post('/start', authorize('ADMIN'), async (req: Request, res: Response) => {
+  const { type, playerCount, afterDate } = req.body;
   try {
     const syncLog = await prisma.syncLog.create({
-      data: { status: 'running' },
+      data: {
+        status: 'running',
+        params: { type: type || 'all', playerCount: playerCount || 0, afterDate: afterDate || null },
+      },
     });
     return res.json({ syncLogId: syncLog.id });
   } catch (err) {

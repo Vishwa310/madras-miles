@@ -305,6 +305,7 @@ model SyncLog {
   rejected        Int      @default(0)
   flagged         Int      @default(0)
   status          String   @default("running") // running, completed, failed
+  params          Json?    // { type: "all" | "selected", playerCount: N, afterDate: "YYYY-MM-DD" | null }
   error           String?
   createdAt       DateTime @default(now()) @map("created_at")
 

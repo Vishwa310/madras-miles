@@ -152,7 +152,7 @@ export default function PlayersOpsPage() {
     setSyncLog([]);
     setSyncProgress({ current: 0, total: playerIds.length, currentPlayer: '', done: false });
 
-    const { syncLogId } = await api.post('/sync/start');
+    const { syncLogId } = await api.post('/sync/start', { type: playerIds.length === players.filter(p => p.status === 'ACTIVE').length ? 'all' : 'selected', playerCount: playerIds.length, afterDate: null });
     const playersToSync = players.filter(p => playerIds.includes(p.id));
     let playersSynced = 0, totalFetched = 0, totalAccepted = 0, totalRejected = 0;
 
