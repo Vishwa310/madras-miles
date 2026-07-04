@@ -135,6 +135,9 @@ export default function AppLayout() {
             <span className="icon text-mm-border" style={{ fontSize: '16px' }}>chevron_right</span>
             <span className="font-display font-semibold text-mm-orange uppercase tracking-wide text-sm">{pageTitle}</span>
           </div>
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <span className="font-display text-xs font-bold uppercase tracking-[0.3em] text-white/30">Madras Walkathon Challenge</span>
+          </div>
           <div className="flex items-center gap-4">
             {/* View switcher (admin only) */}
             {user.role === 'ADMIN' && (

@@ -73,9 +73,18 @@ export default function PlayerDashboard() {
       {/* Greeting + Team banner */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
-          <h1 className="font-display text-2xl font-bold">
-            Hey, <span className="text-gradient-hero">{user.name?.split(' ')[0]}</span>
-          </h1>
+          <div className="flex items-center gap-4">
+            {user.avatarUrl ? (
+              <img src={user.avatarUrl} className="w-16 h-16 rounded-2xl border-2 border-mm-orange/30 shadow-lg shadow-mm-orange/10" alt="" />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl gradient-hero flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-mm-orange/10">
+                {user.name?.split(' ').map((n: string) => n[0]).join('')}
+              </div>
+            )}
+            <h1 className="font-display text-2xl font-bold">
+              Hey, <span className="text-gradient-hero">{user.name?.split(' ')[0]}</span>
+            </h1>
+          </div>
           {scores && (scores.daysScored || scores.totalActivities) >= 3 && (
             <div className="flex items-center gap-2 px-4 py-2 bg-mm-orange/10 border border-mm-orange/30 rounded-full text-sm text-mm-orange font-display font-semibold">
               <span className="icon-sm">local_fire_department</span> {scores.daysScored || scores.totalActivities} Day Streak
@@ -109,8 +118,7 @@ export default function PlayerDashboard() {
           </div>
         ) : (
           <div className="mt-4 px-5 py-4 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
-            <p className="text-sm text-mm-text-muted">Welcome to Madras Walkathon!</p>
-            <p key={quoteIndex} className="text-white/40 italic text-xs mt-2 animate-[fadeQuote_5s_ease-in-out_infinite]">
+            <p key={quoteIndex} className="text-white/40 italic text-xs animate-[fadeQuote_5s_ease-in-out_infinite]">
               💡 {PLAYER_QUOTES[quoteIndex]}
             </p>
           </div>
