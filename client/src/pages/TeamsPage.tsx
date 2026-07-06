@@ -108,7 +108,7 @@ export default function TeamsPage() {
       {/* Teams grid */}
       <div className="grid grid-cols-2 gap-5">
         {teams.map(team => (
-          <div key={team.id} className="bg-mm-bg-card border border-mm-border rounded-2xl p-6 hover:border-mm-orange/30 transition group">
+          <div key={team.id} className="border border-mm-border rounded-2xl p-6 hover:border-mm-orange/30 transition group" style={{ background: `linear-gradient(135deg, ${team.emblem || '#6B7280'}08, ${team.emblem || '#6B7280'}03)` }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl" style={{ backgroundColor: team.emblem || '#6B7280' }} />
