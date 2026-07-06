@@ -254,6 +254,69 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
 });
 
 /**
+ * POST /api/sync/split-pace/:activityId
+ * Run per-km split pace validation on a specific activity
+ * Requires Strava API call to fetch streams
+ * Admin only
+ */
+syncRouter.post('/split-pace/:activityId', authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const activity = await prisma.activity.findUnique({
+      where: { id: req.params.activityId },
+      include: {
+        player: {
+          include: {
+            user: { select: { stravaAccessToken: true, stravaRefreshToken: true, tokenExpiresAt: true } },
+          },
+        },
+      },
+    });
+
+    if (!activity) return res.status(404).json({ error: 'Activity not found' });
+
+    const user = activity.player.user;
+    if (!user.stravaAccessToken) {
+      return res.json({ status: 'error', reason: 'Player has no Strava token' });
+    }
+
+    // Refresh token if needed
+    const { getValidAccessToken } = await import('../services/strava');
+    const tokenResult = await getValidAccessToken(
+      user.stravaAccessToken,
+      user.stravaRefreshToken!,
+      user.tokenExpiresAt || new Date(0)
+    );
+
+    if (!tokenResult) {
+      return res.json({ status: 'error', reason: 'Token refresh failed' });
+    }
+
+    // Get challenge config for pace limits
+    const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
+    const minPace = challenge?.minPaceMinPerKm || 9;
+    const maxPace = challenge?.maxPaceMinPerKm || 16;
+
+    // Run split pace validation
+    const { validateSplitPace } = await import('../services/validation');
+    const result = await validateSplitPace(activity.stravaActivityId, tokenResult.accessToken, minPace, maxPace);
+
+    if (result) {
+      // Flag the activity
+      await prisma.activity.update({
+        where: { id: activity.id },
+        data: { status: 'FLAGGED', rejectionReason: result },
+      });
+      return res.json({ status: 'flagged', reason: result });
+    }
+
+    return res.json({ status: 'clean', reason: 'All km splits within pace range' });
+  } catch (err: any) {
+    console.error('Split pace check error:', err);
+    return res.status(500).json({ error: 'Split pace check failed', reason: err.message });
+  }
+});
+
+/**
  * GET /api/sync/status
  * Get the latest sync status
  */

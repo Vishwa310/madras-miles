@@ -18,12 +18,26 @@ export default function TeamGridView() {
   const [challenge, setChallenge] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<{ player: any; date: string; cell: DayCell } | null>(null);
+  const [splitResult, setSplitResult] = useState<{ id: string; status: string; reason: string } | null>(null);
 
   async function overrideActivity(actId: string, action: 'approve' | 'reject') {
     await api.post(`/activities/${actId}/${action}`, action === 'reject' ? { reason: 'Rejected by admin (manual override)' } : undefined);
-    // Reload team data to refresh the grid
     setModal(null);
     await loadTeamData(selectedTeamId);
+  }
+
+  async function checkSplitPace(actId: string) {
+    setSplitResult({ id: actId, status: 'checking', reason: 'Fetching Strava streams...' });
+    try {
+      const result = await api.post(`/sync/split-pace/${actId}`);
+      setSplitResult({ id: actId, status: result.status, reason: result.reason });
+      if (result.status === 'flagged') {
+        // Refresh grid after flagging
+        setTimeout(() => { setModal(null); loadTeamData(selectedTeamId); }, 2000);
+      }
+    } catch (err: any) {
+      setSplitResult({ id: actId, status: 'error', reason: err.message });
+    }
   }
 
   useEffect(() => { loadTeams(); }, []);
@@ -279,9 +293,23 @@ export default function TeamGridView() {
                     {act.rejectionReason && (
                       <div className="text-xs text-mm-hot mt-0.5 truncate">{act.rejectionReason}</div>
                     )}
+                    {splitResult && splitResult.id === act.id && (
+                      <div className={`text-xs mt-0.5 ${
+                        splitResult.status === 'clean' ? 'text-mm-teal' :
+                        splitResult.status === 'checking' ? 'text-mm-text-muted animate-pulse' :
+                        splitResult.status === 'flagged' ? 'text-mm-gold' : 'text-mm-hot'
+                      }`}>
+                        {splitResult.status === 'checking' ? '⏳ ' : splitResult.status === 'clean' ? '✅ ' : splitResult.status === 'flagged' ? '⚠️ ' : '❌ '}
+                        {splitResult.reason}
+                      </div>
+                    )}
                   </div>
                   {/* Override actions */}
                   <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button onClick={() => checkSplitPace(act.id)} title="Check km splits"
+                      className="w-7 h-7 rounded-full bg-mm-purple/15 text-purple-300 border border-mm-purple/30 flex items-center justify-center hover:scale-110 transition">
+                      <span className="icon-sm">query_stats</span>
+                    </button>
                     {act.status !== 'ACCEPTED' && (
                       <button onClick={() => overrideActivity(act.id, 'approve')} title="Approve"
                         className="w-7 h-7 rounded-full bg-mm-teal/15 text-mm-teal border border-mm-teal/30 flex items-center justify-center hover:scale-110 transition">
