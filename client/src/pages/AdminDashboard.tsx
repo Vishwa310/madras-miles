@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { PageLoader } from '../lib/loaders';
 
@@ -79,9 +80,13 @@ export default function AdminDashboard() {
   // Loading state
   if (loading) return <PageLoader />;
 
+  const navigate = useNavigate();
+
   // Computed stats
   const totalPlayers = teams.reduce((s, t) => s + t.playerCount, 0);
   const acceptedActs = activities.filter(a => a.status === 'ACCEPTED');
+  const flaggedActs = activities.filter(a => a.status === 'FLAGGED');
+  const rejectedActs = activities.filter(a => a.status === 'REJECTED');
   const totalKm = playerRankings.reduce((s, p) => s + (p.totalKm || 0), 0);
 
   // Challenge timing
@@ -147,13 +152,23 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Catchy Stats — Shareable / Mailer-ready */}
+      {/* Catchy Stats */}
       <div className="grid grid-cols-5 gap-3 mb-6">
         <CatchyStat icon="route" value={`${totalKm.toFixed(0)} km`} label="Total Distance" sub="All players combined" color="text-mm-teal" />
         <CatchyStat icon="groups" value={totalPlayers} label="Athletes" sub={`${teams.length} teams`} color="text-mm-purple" />
-        <CatchyStat icon="route" value={`${totalKm.toFixed(1)} km`} label="Total Distance" sub="All players combined" color="text-mm-gold" />
-        <CatchyStat icon="avg_pace" value={`${avgKmPerPlayer} km`} label="Avg Per Player" sub="Total distance ÷ players" color="text-mm-blue" />
-        <CatchyStat icon="directions_walk" value={acceptedActs.length} label="Valid Activities" sub={`${activities.filter(a=>a.status==='REJECTED').length} rejected`} color="text-mm-orange" />
+        <CatchyStat icon="check_circle" value={acceptedActs.length} label="Accepted" sub="Valid activities" color="text-mm-teal" />
+        <div onClick={() => navigate('/app/grid?filter=flagged')} className="cursor-pointer hover:border-mm-gold/50 transition bg-mm-bg-card border border-mm-border rounded-xl p-4 text-center">
+          <span className="icon-sm text-mm-gold">warning</span>
+          <div className="font-display text-xl font-bold mt-2 text-mm-gold">{flaggedActs.length}</div>
+          <div className="text-[0.65rem] text-mm-text-secondary mt-1">Flagged</div>
+          <div className="text-[0.55rem] text-mm-text-muted">Needs review →</div>
+        </div>
+        <div onClick={() => navigate('/app/grid?filter=rejected')} className="cursor-pointer hover:border-mm-hot/50 transition bg-mm-bg-card border border-mm-border rounded-xl p-4 text-center">
+          <span className="icon-sm text-mm-hot">cancel</span>
+          <div className="font-display text-xl font-bold mt-2 text-mm-hot">{rejectedActs.length}</div>
+          <div className="text-[0.65rem] text-mm-text-secondary mt-1">Rejected</div>
+          <div className="text-[0.55rem] text-mm-text-muted">View in grid →</div>
+        </div>
       </div>
 
       {/* Team Leaderboard — Full Width */}

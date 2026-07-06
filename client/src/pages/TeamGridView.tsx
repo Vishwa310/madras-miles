@@ -1,5 +1,6 @@
 import { GridLoader } from '../lib/loaders';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 
 interface DayCell {
@@ -10,6 +11,8 @@ interface DayCell {
 }
 
 export default function TeamGridView() {
+  const [searchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('filter') || '');
   const [teams, setTeams] = useState<any[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [players, setPlayers] = useState<any[]>([]);
@@ -119,10 +122,22 @@ export default function TeamGridView() {
           <h1 className="font-display text-2xl font-bold uppercase">Team Grid View</h1>
           <p className="text-sm text-mm-text-muted mt-1">Players × Days — click any cell for details</p>
         </div>
-        <select value={selectedTeamId} onChange={e => handleTeamChange(e.target.value)}
-          className="px-4 py-2.5 bg-mm-bg-card border border-mm-border rounded-lg text-sm focus:border-mm-orange outline-none">
-          {teams.map(t => <option key={t.id} value={t.id}>{t.emblem} {t.name}</option>)}
-        </select>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            {['', 'flagged', 'rejected'].map(f => (
+              <button key={f} onClick={() => setStatusFilter(f)}
+                className={`px-3 py-1.5 rounded-full text-[0.65rem] font-semibold uppercase transition ${
+                  statusFilter === f ? (f === 'flagged' ? 'bg-mm-gold/15 text-mm-gold border border-mm-gold/30' : f === 'rejected' ? 'bg-mm-hot/15 text-mm-hot border border-mm-hot/30' : 'gradient-hero text-white') : 'bg-mm-bg-card border border-mm-border text-mm-text-muted hover:text-white'
+                }`}>
+                {f || 'All'}
+              </button>
+            ))}
+          </div>
+          <select value={selectedTeamId} onChange={e => handleTeamChange(e.target.value)}
+            className="px-4 py-2.5 bg-mm-bg-card border border-mm-border rounded-lg text-sm focus:border-mm-orange outline-none">
+            {teams.map(t => <option key={t.id} value={t.id}>{t.emblem} {t.name}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* Legend */}
@@ -205,15 +220,18 @@ export default function TeamGridView() {
                             onClick={() => setModal({ player, date, cell })}
                             className="w-full flex flex-col gap-0.5 items-center transition hover:scale-105"
                           >
-                            {cell.activities.map((act: any, idx: number) => (
-                              <div key={idx} className={`w-full rounded-sm px-0.5 py-0.5 text-[0.55rem] font-display font-bold leading-tight ${
-                                act.status === 'ACCEPTED' ? 'bg-mm-teal/15 text-mm-teal border border-mm-teal/30' :
-                                act.status === 'REJECTED' ? 'bg-mm-hot/15 text-mm-hot border border-mm-hot/30' :
-                                'bg-mm-gold/15 text-mm-gold border border-mm-gold/30'
-                              }`}>
-                                {((act.creditedMeters || act.distanceMeters) / 1000).toFixed(1)}
-                              </div>
-                            ))}
+                            {cell.activities.map((act: any, idx: number) => {
+                              const matchesFilter = !statusFilter || act.status === statusFilter.toUpperCase();
+                              return (
+                                <div key={idx} className={`w-full rounded-sm px-0.5 py-0.5 text-[0.55rem] font-display font-bold leading-tight ${
+                                  act.status === 'ACCEPTED' ? 'bg-mm-teal/15 text-mm-teal border border-mm-teal/30' :
+                                  act.status === 'REJECTED' ? 'bg-mm-hot/15 text-mm-hot border border-mm-hot/30' :
+                                  'bg-mm-gold/15 text-mm-gold border border-mm-gold/30'
+                                } ${!matchesFilter ? 'opacity-10' : ''}`}>
+                                  {((act.creditedMeters || act.distanceMeters) / 1000).toFixed(1)}
+                                </div>
+                              );
+                            })}
                           </button>
                         </td>
                       );
