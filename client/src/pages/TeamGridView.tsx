@@ -106,16 +106,6 @@ export default function TeamGridView() {
     loadTeamData(teamId);
   }
 
-  function getCellColor(cell: DayCell): string {
-    if (cell.activities.length === 0) return '';
-    const hasRejected = cell.activities.some(a => a.status === 'REJECTED');
-    const hasFlagged = cell.activities.some(a => a.status === 'FLAGGED');
-    if (hasFlagged) return 'bg-mm-gold/10 border-mm-gold/30';
-    if (hasRejected && cell.scoredKm === 0) return 'bg-mm-hot/10 border-mm-hot/30';
-    if (cell.scoredKm >= 7) return 'bg-mm-teal/15 border-mm-teal/30';
-    if (cell.scoredKm > 0) return 'bg-mm-teal/8 border-mm-teal/20';
-    return 'bg-mm-hot/5 border-mm-border';
-  }
 
   if (loading) return <GridLoader />;
   // Show all dates — horizontal scroll handles overflow
@@ -210,19 +200,20 @@ export default function TeamGridView() {
                       }
 
                       return (
-                        <td key={date} className={`px-1 py-2 text-center border-b border-mm-border ${mondayBorder}`}>
+                        <td key={date} className={`px-0.5 py-1 text-center border-b border-mm-border ${mondayBorder}`}>
                           <button
                             onClick={() => setModal({ player, date, cell })}
-                            className={`w-full h-9 rounded-md border flex flex-col items-center justify-center transition hover:scale-105 hover:shadow-md ${getCellColor(cell)}`}
+                            className="w-full flex flex-col gap-0.5 items-center transition hover:scale-105"
                           >
-                            <span className="text-[0.65rem] font-display font-bold text-white leading-tight">
-                              {cell.scoredKm.toFixed(2)}
-                            </span>
-                            {cell.totalKm !== cell.scoredKm && (
-                              <span className="text-[0.5rem] text-mm-text-muted leading-tight">
-                                /{cell.totalKm.toFixed(2)}
-                              </span>
-                            )}
+                            {cell.activities.map((act: any, idx: number) => (
+                              <div key={idx} className={`w-full rounded-sm px-0.5 py-0.5 text-[0.55rem] font-display font-bold leading-tight ${
+                                act.status === 'ACCEPTED' ? 'bg-mm-teal/15 text-mm-teal border border-mm-teal/30' :
+                                act.status === 'REJECTED' ? 'bg-mm-hot/15 text-mm-hot border border-mm-hot/30' :
+                                'bg-mm-gold/15 text-mm-gold border border-mm-gold/30'
+                              }`}>
+                                {((act.creditedMeters || act.distanceMeters) / 1000).toFixed(1)}
+                              </div>
+                            ))}
                           </button>
                         </td>
                       );
