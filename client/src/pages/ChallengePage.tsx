@@ -155,6 +155,34 @@ export default function ChallengePage() {
           </button>
         </div>
       </form>
+
+      {/* Validation Rules Reference */}
+      <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-6 mt-6">
+        <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-mm-text-muted mb-4 flex items-center gap-2">
+          <span className="icon-sm text-mm-orange">gavel</span> Validation Rules (Auto-enforced on Sync)
+        </h3>
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-mm-border">
+              <th className="text-left px-4 py-2.5 text-xs text-mm-text-muted uppercase">Rule</th>
+              <th className="text-left px-4 py-2.5 text-xs text-mm-text-muted uppercase w-[120px]">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <RuleRow rule="Manual entry (no GPS)" action="rejected" />
+            <RuleRow rule="Activity type is not Walk" action="rejected" />
+            <RuleRow rule="No GPS polyline / start location" action="rejected" />
+            <RuleRow rule="Activity outside challenge date window" action="rejected" />
+            <RuleRow rule={`Distance less than ${form.minDistancePerActivity / 1000} km`} action="rejected" />
+            <RuleRow rule={`Average pace outside ${form.minPaceMinPerKm}–${form.maxPaceMinPerKm} min/km`} action="rejected" />
+            <RuleRow rule="Player not in active roster for that week" action="rejected" />
+            <RuleRow rule="Rest day — walked 6 consecutive days (7th day)" action="rejected" />
+            <RuleRow rule={`Daily cap exceeded (>${form.maxDailyKm} km) — partial credit applied`} action="accepted" />
+            <RuleRow rule="Activity outside allowed time window (weekday 4-9AM/5-10PM, weekend 4AM-10PM)" action="flagged" />
+            <RuleRow rule="Duplicate activity (already synced)" action="rejected" />
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -177,5 +205,23 @@ function Field({ label, value, onChange, type = 'text', placeholder }: { label: 
       <input type={type} value={value} onChange={e => onChange(e.target.value)} step={type === 'number' ? 'any' : undefined} placeholder={placeholder}
         className="w-full mt-1 px-4 py-2.5 bg-mm-bg-primary border border-mm-border rounded-lg text-sm focus:border-mm-orange outline-none" />
     </div>
+  );
+}
+
+function RuleRow({ rule, action }: { rule: string; action: 'accepted' | 'rejected' | 'flagged' }) {
+  const styles = {
+    accepted: 'bg-mm-teal/10 text-mm-teal border-mm-teal/30',
+    rejected: 'bg-mm-hot/10 text-mm-hot border-mm-hot/30',
+    flagged: 'bg-mm-gold/10 text-mm-gold border-mm-gold/30',
+  };
+  return (
+    <tr className="border-b border-mm-border/50 last:border-0">
+      <td className="px-4 py-3 text-sm text-mm-text-secondary">{rule}</td>
+      <td className="px-4 py-3">
+        <span className={`px-2.5 py-1 rounded-full text-[0.65rem] font-semibold uppercase border ${styles[action]}`}>
+          {action}
+        </span>
+      </td>
+    </tr>
   );
 }
