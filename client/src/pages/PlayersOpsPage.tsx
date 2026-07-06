@@ -116,7 +116,7 @@ export default function PlayersOpsPage() {
         players: teamPlayers,
         totalDistance: 0,
         totalPoints: totalPts,
-        isExpanded: true,
+        isExpanded: false,
       };
     });
     setTeamGroups(groups);
@@ -427,11 +427,18 @@ export default function PlayersOpsPage() {
               <div className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-md flex-shrink-0" style={{ backgroundColor: group.teamEmblem || '#6B7280' }} />
                 <span className="font-display font-semibold text-sm uppercase tracking-wide">{group.teamName}</span>
-                <span className="text-xs text-mm-text-muted">{group.players.length} players</span>
               </div>
-              <div className="flex items-center gap-5">
-                <span className="text-xs text-mm-gold font-display font-semibold">{typeof group.totalPoints === 'number' ? group.totalPoints.toFixed(2) : group.totalPoints} pts</span>
-                <span className={`icon-sm text-mm-text-muted transition-transform ${group.isExpanded ? 'rotate-180' : ''}`}>expand_more</span>
+              <div className="flex items-center gap-4 text-xs text-mm-text-muted">
+                <span>{group.players.length} players</span>
+                <span className="text-mm-border">|</span>
+                <span>{group.players.filter(p => p.gender === 'FEMALE').length}F</span>
+                <span className="text-mm-border">|</span>
+                <span>{group.players.filter(p => p.gender === 'MALE').length}M</span>
+                <span className="text-mm-border">|</span>
+                <span>{playerStats.get(group.players[0]?.id)?.total?.acts !== undefined ? group.players.reduce((s, p) => s + (playerStats.get(p.id)?.total?.acts || 0), 0) : 0} activities</span>
+                <span className="text-mm-border">|</span>
+                <span className="text-mm-gold font-semibold">{typeof group.totalPoints === 'number' ? group.totalPoints.toFixed(2) : group.totalPoints} km</span>
+                <span className={`icon-sm transition-transform ${group.isExpanded ? 'rotate-180' : ''}`}>expand_more</span>
               </div>
             </button>
 
