@@ -50,6 +50,9 @@ export default function PlayersOpsPage() {
   const [syncLog, setSyncLog] = useState<{ player: string; status: string; activities?: number; accepted?: number; rejected?: number; reason?: string }[]>([]);
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, currentPlayer: '', done: false });
 
+  // Split pace audit
+  const [splitAudit, setSplitAudit] = useState<{ playerName: string; activities: any[]; accessToken: string; results: Map<string, { status: string; splits: { km: number; pace: number; status: string }[]; reason: string }>; current: number; total: number; done: boolean } | null>(null);
+
   // Team change modal
   const [teamChangeModal, setTeamChangeModal] = useState<PlayerRow | null>(null);
   const [newTeamId, setNewTeamId] = useState('');
@@ -185,6 +188,35 @@ export default function PlayersOpsPage() {
   function syncAll() {
     const allActive = players.filter(p => p.status === 'ACTIVE').map(p => p.id);
     syncPlayers(allActive);
+  }
+
+  // Split pace audit for a player
+  async function runSplitAudit(player: PlayerRow) {
+    const data = await api.post(`/sync/split-pace/player/${player.id}`);
+    if (data.error) { alert(data.error); return; }
+
+    const results = new Map<string, { status: string; splits: { km: number; pace: number; status: string }[]; reason: string }>();
+    setSplitAudit({ playerName: data.player, activities: data.activities, accessToken: data.accessToken, results, current: 0, total: data.activities.length, done: false });
+
+    // Process each activity sequentially
+    for (let i = 0; i < data.activities.length; i++) {
+      const act = data.activities[i];
+      setSplitAudit(prev => prev ? { ...prev, current: i + 1 } : null);
+
+      try {
+        const result = await api.post(`/sync/split-pace/${act.id}/analyze`, { accessToken: data.accessToken });
+        results.set(act.id, { status: result.status, splits: result.splits || [], reason: result.reason });
+        setSplitAudit(prev => prev ? { ...prev, results: new Map(results) } : null);
+      } catch (err: any) {
+        results.set(act.id, { status: 'error', splits: [], reason: err.message });
+        setSplitAudit(prev => prev ? { ...prev, results: new Map(results) } : null);
+      }
+
+      // Small delay to avoid Strava rate limiting
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    setSplitAudit(prev => prev ? { ...prev, done: true } : null);
   }
 
   // View activities
@@ -477,6 +509,10 @@ export default function PlayersOpsPage() {
                             className="w-7 h-7 rounded-lg flex items-center justify-center text-mm-text-muted hover:text-mm-teal hover:bg-mm-teal/10 transition">
                             <span className="icon-sm">directions_run</span>
                           </button>
+                          <button onClick={() => runSplitAudit(p)} title="Split Pace Audit"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-mm-text-muted hover:text-purple-300 hover:bg-purple-500/10 transition">
+                            <span className="icon-sm">query_stats</span>
+                          </button>
                           <button onClick={() => { setTeamChangeModal(p); setNewTeamId(''); }} title="Change Team"
                             className="w-7 h-7 rounded-lg flex items-center justify-center text-mm-text-muted hover:text-mm-purple hover:bg-purple-500/10 transition">
                             <span className="icon-sm">move_up</span>
@@ -692,6 +728,88 @@ export default function PlayersOpsPage() {
 
             {syncProgress.done && (
               <button onClick={() => { setSyncLog([]); setSyncProgress({ current: 0, total: 0, currentPlayer: '', done: false }); }}
+                className="mt-4 px-5 py-2.5 gradient-hero rounded-full font-display font-semibold text-sm text-white w-full">
+                Close
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Split Pace Audit Dialog */}
+      {splitAudit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-6 w-full max-w-2xl max-h-[85vh] shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display text-lg font-bold flex items-center gap-2">
+                  <span className="icon text-purple-400" style={{ fontSize: '20px' }}>query_stats</span>
+                  Split Pace Audit — {splitAudit.playerName}
+                </h3>
+                <p className="text-xs text-mm-text-muted mt-1">Checking each km split for {splitAudit.total} activities (9–16 min/km allowed)</p>
+              </div>
+              <span className="text-sm text-mm-text-secondary font-mono">{splitAudit.current}/{splitAudit.total}</span>
+            </div>
+
+            <div className="w-full h-2 rounded-full bg-mm-bg-elevated mb-4 overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-300" style={{
+                width: `${splitAudit.total > 0 ? (splitAudit.current / splitAudit.total) * 100 : 0}%`,
+                background: splitAudit.done ? '#06d6a0' : 'linear-gradient(90deg, #7b2ff7, #06d6a0)',
+              }} />
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 min-h-[250px] max-h-[450px]">
+              {splitAudit.activities.map((act: any) => {
+                const result = splitAudit.results.get(act.id);
+                return (
+                  <div key={act.id} className={`p-3 rounded-xl border ${
+                    !result ? 'bg-mm-bg-primary border-mm-border' :
+                    result.status === 'clean' ? 'bg-mm-teal/5 border-mm-teal/15' :
+                    result.status === 'flagged' ? 'bg-mm-gold/5 border-mm-gold/15' :
+                    'bg-mm-hot/5 border-mm-hot/15'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-mm-text-secondary">{new Date(act.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                        <span className="font-semibold">{act.distanceKm} km</span>
+                        <span className="text-mm-text-muted">{act.avgPace} min/km avg</span>
+                        <span className="text-mm-text-muted">{act.movingMin} min</span>
+                      </div>
+                      {!result && <span className="text-xs text-mm-text-muted animate-pulse">waiting...</span>}
+                      {result && (
+                        <span className={`text-xs font-semibold ${
+                          result.status === 'clean' ? 'text-mm-teal' : result.status === 'flagged' ? 'text-mm-gold' : 'text-mm-hot'
+                        }`}>
+                          {result.status === 'clean' ? '✅ OK' : result.status === 'flagged' ? '⚠️ Flagged' : '❌ Error'}
+                        </span>
+                      )}
+                    </div>
+                    {/* Split bars */}
+                    {result && result.splits.length > 0 && (
+                      <div className="flex items-end gap-0.5 h-8 mt-1">
+                        {result.splits.map((s, i) => {
+                          const height = Math.min(100, Math.max(20, (s.pace / 20) * 100));
+                          return (
+                            <div key={i} className="flex-1 flex flex-col items-center gap-0.5" title={`Km ${s.km}: ${s.pace} min/km`}>
+                              <div className={`w-full rounded-sm transition-all ${
+                                s.status === 'ok' ? 'bg-mm-teal/60' : s.status === 'fast' ? 'bg-mm-hot/80' : 'bg-mm-gold/80'
+                              }`} style={{ height: `${height}%` }} />
+                              <span className="text-[0.5rem] text-mm-text-muted">{s.pace}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {result && result.status === 'flagged' && (
+                      <p className="text-xs text-mm-gold mt-1">{result.reason}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {splitAudit.done && (
+              <button onClick={() => setSplitAudit(null)}
                 className="mt-4 px-5 py-2.5 gradient-hero rounded-full font-display font-semibold text-sm text-white w-full">
                 Close
               </button>

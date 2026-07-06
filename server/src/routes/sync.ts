@@ -254,6 +254,134 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
 });
 
 /**
+ * POST /api/sync/split-pace/player/:playerId
+ * Run per-km split pace validation on ALL accepted activities of a player
+ * Returns split data for each activity
+ * Admin only
+ */
+syncRouter.post('/split-pace/player/:playerId', authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const player = await prisma.player.findUnique({
+      where: { id: req.params.playerId },
+      include: {
+        user: { select: { name: true, stravaAccessToken: true, stravaRefreshToken: true, tokenExpiresAt: true } },
+        activities: {
+          where: { status: 'ACCEPTED' },
+          orderBy: { startDate: 'desc' },
+          select: { id: true, stravaActivityId: true, distanceMeters: true, startDate: true, avgSpeed: true, movingTimeSeconds: true },
+        },
+      },
+    });
+
+    if (!player) return res.status(404).json({ error: 'Player not found' });
+    if (!player.user.stravaAccessToken) return res.json({ error: 'No Strava token' });
+
+    const { getValidAccessToken } = await import('../services/strava');
+    const tokenResult = await getValidAccessToken(
+      player.user.stravaAccessToken,
+      player.user.stravaRefreshToken!,
+      player.user.tokenExpiresAt || new Date(0)
+    );
+    if (!tokenResult) return res.json({ error: 'Token refresh failed' });
+
+    const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
+    const minPace = challenge?.minPaceMinPerKm || 9;
+    const maxPace = challenge?.maxPaceMinPerKm || 16;
+
+    return res.json({
+      player: player.user.name,
+      playerId: player.id,
+      accessToken: tokenResult.accessToken,
+      activities: player.activities.map(a => ({
+        id: a.id,
+        stravaActivityId: a.stravaActivityId,
+        date: a.startDate,
+        distanceKm: (a.distanceMeters / 1000).toFixed(2),
+        avgPace: a.avgSpeed > 0 ? ((1000 / a.avgSpeed) / 60).toFixed(1) : '?',
+        movingMin: Math.round(a.movingTimeSeconds / 60),
+      })),
+      minPace,
+      maxPace,
+    });
+  } catch (err: any) {
+    console.error('Bulk split pace prep error:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/sync/split-pace/:activityId/analyze
+ * Fetch and return split data for a single activity (without flagging)
+ * Returns the splits array for display
+ * Admin only
+ */
+syncRouter.post('/split-pace/:activityId/analyze', authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const { accessToken } = req.body;
+    const activity = await prisma.activity.findUnique({ where: { id: req.params.activityId } });
+    if (!activity) return res.status(404).json({ error: 'Activity not found' });
+
+    const response = await fetch(
+      `https://www.strava.com/api/v3/activities/${activity.stravaActivityId}/streams?keys=distance,time&key_by_type=true`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (!response.ok) {
+      return res.json({ status: 'error', reason: 'Could not fetch Strava streams', splits: [] });
+    }
+
+    const streams = await response.json() as any;
+    const distanceData = streams.distance?.data;
+    const timeData = streams.time?.data;
+
+    if (!distanceData || !timeData || distanceData.length === 0) {
+      return res.json({ status: 'no_data', reason: 'No stream data available', splits: [] });
+    }
+
+    const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
+    const minPace = challenge?.minPaceMinPerKm || 9;
+    const maxPace = challenge?.maxPaceMinPerKm || 16;
+
+    const splits: { km: number; pace: number; status: string }[] = [];
+    let lastKmDistance = 0;
+    let lastKmTime = 0;
+    let kmCount = 0;
+    let hasFailed = false;
+    let failReason = '';
+
+    for (let i = 0; i < distanceData.length; i++) {
+      if (distanceData[i] - lastKmDistance >= 1000) {
+        kmCount++;
+        const splitDist = distanceData[i] - lastKmDistance;
+        const splitTime = timeData[i] - lastKmTime;
+        const pace = (splitTime / 60) / (splitDist / 1000);
+
+        let status = 'ok';
+        if (pace < minPace) { status = 'fast'; hasFailed = true; failReason = `Km ${kmCount}: ${pace.toFixed(1)} min/km (too fast)`; }
+        else if (pace > maxPace) { status = 'slow'; hasFailed = true; failReason = `Km ${kmCount}: ${pace.toFixed(1)} min/km (too slow)`; }
+
+        splits.push({ km: kmCount, pace: parseFloat(pace.toFixed(1)), status });
+        lastKmDistance = distanceData[i];
+        lastKmTime = timeData[i];
+      }
+    }
+
+    // Flag if failed
+    if (hasFailed) {
+      await prisma.activity.update({
+        where: { id: activity.id },
+        data: { status: 'FLAGGED', rejectionReason: failReason },
+      });
+    }
+
+    return res.json({ status: hasFailed ? 'flagged' : 'clean', splits, reason: hasFailed ? failReason : 'All splits OK' });
+  } catch (err: any) {
+    console.error('Split analyze error:', err);
+    return res.json({ status: 'error', reason: err.message, splits: [] });
+  }
+});
+
+/**
  * POST /api/sync/split-pace/:activityId
  * Run per-km split pace validation on a specific activity
  * Requires Strava API call to fetch streams
