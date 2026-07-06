@@ -29,12 +29,25 @@ substitutionsRouter.post('/', async (req: Request, res: Response) => {
     if (retired.status === 'RETIRED') return res.status(400).json({ error: 'Player is already retired' });
     if (retired.teamId !== sub.teamId) return res.status(400).json({ error: 'Players must be on the same team' });
     if (sub.status === 'ACTIVE') return res.status(400).json({ error: 'Replacement player is already active' });
+
+    // Max 5 substitutions per team
+    const teamSubCount = await prisma.substitutionLog.count({ where: { teamId: retired.teamId } });
+    if (teamSubCount >= 5) {
+      return res.status(400).json({ error: 'Team has reached maximum 5 substitutions' });
+    }
+
     if (sub.status === 'RETIRED') {
       // Check if the sub is female (females can return)
       if (sub.gender === 'MALE') {
         return res.status(400).json({ error: 'Retired male players cannot come back' });
       }
-      // Female — allow reactivation handled below
+      // Female can return only once — check if she has already been reactivated before
+      const previousReturns = await prisma.substitutionLog.count({
+        where: { substitutePlayerId: sub.id },
+      });
+      if (previousReturns >= 1) {
+        return res.status(400).json({ error: 'Female player has already returned once — cannot return again' });
+      }
     }
 
     const now = new Date();

@@ -114,6 +114,27 @@ export async function validateActivity(
     return reject('Duplicate activity — already synced');
   }
 
+  // 11. Time window check — flag (not reject) if outside allowed hours
+  // Weekdays: 4AM-9AM or 5PM-10PM | Weekends/holidays: 4AM-10PM
+  const actHour = activityDate.getHours();
+  const dayOfWeek = activityDate.getDay(); // 0=Sun, 6=Sat
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+  let outsideWindow = false;
+  if (isWeekend) {
+    // Weekends: 4AM to 10PM
+    outsideWindow = actHour < 4 || actHour >= 22;
+  } else {
+    // Weekdays: 4AM-9AM or 5PM-10PM
+    const inMorning = actHour >= 4 && actHour < 9;
+    const inEvening = actHour >= 17 && actHour < 22;
+    outsideWindow = !(inMorning || inEvening);
+  }
+
+  if (outsideWindow) {
+    return { status: 'FLAGGED', reason: `Activity at ${actHour}:00 is outside allowed time window` };
+  }
+
   return accept();
 }
 
