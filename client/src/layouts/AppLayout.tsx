@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { api, clearToken, isLoggedIn } from '../lib/api';
+import { useTheme } from '../lib/theme';
 
 const adminNav = [
   { path: '/app/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -32,6 +33,7 @@ function getPageTitle(pathname: string): string {
 export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
   const [user, setUser] = useState<any>(null);
   const [viewAs, setViewAs] = useState<'ADMIN' | 'PLAYER'>('ADMIN');
 
@@ -106,6 +108,16 @@ export default function AppLayout() {
 
         {/* Bottom */}
         <div className="flex flex-col items-center gap-1.5 pt-4 border-t border-mm-border relative z-10">
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+            className="group w-11 h-11 rounded-[14px] flex items-center justify-center text-mm-text-muted hover:text-mm-orange hover:bg-mm-orange/10 transition relative"
+          >
+            <span className="icon" style={{ fontSize: '20px' }}>{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
+            <span className="absolute left-14 px-3 py-1.5 bg-mm-bg-card border border-mm-border rounded-lg text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50">
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </span>
+          </button>
           <button
             onClick={() => { clearToken(); navigate('/login'); }}
             title="Logout"
