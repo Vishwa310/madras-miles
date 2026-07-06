@@ -7,6 +7,7 @@ export default function TeamsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: '', emblem: '', minPlayers: 6, maxPlayers: 20, minFemale: 3 });
+  const [auditModal, setAuditModal] = useState<{ teamName: string; logs: any[] } | null>(null);
 
   useEffect(() => { loadTeams(); }, []);
 
@@ -47,6 +48,11 @@ export default function TeamsPage() {
         a.click();
         URL.revokeObjectURL(url);
       });
+  }
+
+  async function loadAudit(teamId: string, teamName: string) {
+    const data = await api.get(`/teams/${teamId}/audit`);
+    setAuditModal({ teamName, logs: data.logs || [] });
   }
 
   if (loading) return <PageLoader />;
@@ -117,6 +123,10 @@ export default function TeamsPage() {
                 className="opacity-0 group-hover:opacity-100 text-mm-text-muted hover:text-mm-hot transition">
                 <span className="icon-sm">delete</span>
               </button>
+              <button onClick={() => loadAudit(team.id, team.name)} title="Audit Log"
+                className="opacity-0 group-hover:opacity-100 text-mm-text-muted hover:text-mm-purple transition">
+                <span className="icon-sm">history</span>
+              </button>
               <button onClick={() => downloadTeam(team.id, team.name)}
                 className="opacity-0 group-hover:opacity-100 text-mm-text-muted hover:text-mm-teal transition" title="Download CSV">
                 <span className="icon-sm">download</span>
@@ -184,6 +194,53 @@ export default function TeamsPage() {
           </div>
         ))}
       </div>
+      {/* Audit Log Modal */}
+      {auditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setAuditModal(null)}>
+          <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-6 w-full max-w-lg max-h-[80vh] shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display text-lg font-bold flex items-center gap-2">
+                <span className="icon text-mm-purple" style={{ fontSize: '20px' }}>history</span>
+                Audit Log — {auditModal.teamName}
+              </h3>
+              <button onClick={() => setAuditModal(null)} className="w-8 h-8 rounded-full bg-mm-bg-primary flex items-center justify-center text-mm-text-muted hover:text-white">
+                <span className="icon-sm">close</span>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 min-h-[200px]">
+              {auditModal.logs.length === 0 && (
+                <p className="text-sm text-mm-text-muted text-center py-8">No audit history yet</p>
+              )}
+              {auditModal.logs.map((log: any) => (
+                <div key={log.id} className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-mm-bg-primary border border-mm-border">
+                  <span className={`icon-sm flex-shrink-0 mt-0.5 ${
+                    log.action === 'assigned' ? 'text-mm-teal' :
+                    log.action === 'retired' ? 'text-mm-hot' :
+                    log.action === 'substitution' ? 'text-mm-orange' :
+                    log.action === 'team_changed' ? 'text-mm-purple' :
+                    'text-mm-gold'
+                  }`}>
+                    {log.action === 'assigned' ? 'person_add' :
+                     log.action === 'retired' ? 'person_remove' :
+                     log.action === 'substitution' ? 'swap_horiz' :
+                     log.action === 'team_changed' ? 'move_up' :
+                     'change_circle'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm">
+                      <strong>{log.playerName}</strong>
+                      <span className="text-mm-text-muted"> — {log.details}</span>
+                    </div>
+                    <div className="text-[0.6rem] text-mm-text-muted mt-0.5">
+                      {new Date(log.createdAt).toLocaleString()} · {log.action.replace('_', ' ')}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -292,6 +292,23 @@ model WeeklyRoster {
 }
 
 // ============================================
+// AUDIT LOG — Team-level operation history
+// ============================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  teamId      String   @map("team_id")
+  action      String   // assigned, status_changed, team_changed, substitution, retired
+  playerName  String   @map("player_name")
+  details     String   // e.g., "Active → Standby", "→ Red Bulls"
+  performedBy String   @map("performed_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([teamId, createdAt])
+  @@map("audit_log")
+}
+
+// ============================================
 // SYNC LOG — Track sync runs
 // ============================================
 

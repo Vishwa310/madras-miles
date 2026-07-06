@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../utils/db';
 import { authenticate, authorize } from '../middleware/auth';
 import { getStravaAuthUrl } from '../services/strava';
+import { logAudit } from '../utils/audit';
 
 export const playersRouter = Router();
 
@@ -253,6 +254,9 @@ playersRouter.post('/', authorize('ADMIN'), async (req: Request, res: Response) 
       return player;
     });
 
+    // Audit: player assigned
+    await logAudit(teamId, 'assigned', result.user.name, `Assigned as ${status || 'ACTIVE'}`, req.user!.userId);
+
     return res.status(201).json({ player: result });
   } catch (err) {
     console.error('Error creating player:', err);
@@ -302,6 +306,17 @@ playersRouter.put('/:id', authorize('ADMIN'), async (req: Request, res: Response
         team: { select: { id: true, name: true } },
       },
     });
+
+    // Audit logging
+    const playerName = updated.user.name;
+    if (status && status !== player.status) {
+      await logAudit(updated.teamId, 'status_changed', playerName, `${player.status} → ${status}`, req.user!.userId);
+    }
+    if (teamId && teamId !== player.teamId) {
+      const oldTeam = await prisma.team.findUnique({ where: { id: player.teamId }, select: { name: true } });
+      await logAudit(player.teamId, 'team_changed', playerName, `Moved to ${updated.team.name}`, req.user!.userId);
+      await logAudit(teamId, 'team_changed', playerName, `Joined from ${oldTeam?.name || 'unknown'}`, req.user!.userId);
+    }
 
     return res.json({ player: updated });
   } catch (err) {

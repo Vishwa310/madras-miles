@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../utils/db';
 import { authenticate, authorize } from '../middleware/auth';
+import { logAudit } from '../utils/audit';
 
 export const substitutionsRouter = Router();
 
@@ -83,6 +84,10 @@ substitutionsRouter.post('/', async (req: Request, res: Response) => {
 
       return log;
     });
+
+    // Audit logging
+    await logAudit(retired.teamId, 'retired', result.retiredPlayer.user.name, `Retired (replaced by ${result.substitutePlayer.user.name})`, req.user!.userId);
+    await logAudit(retired.teamId, 'substitution', result.substitutePlayer.user.name, `Activated (replacing ${result.retiredPlayer.user.name})`, req.user!.userId);
 
     return res.status(201).json({ substitution: result });
   } catch (err) {

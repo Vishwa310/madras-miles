@@ -213,3 +213,22 @@ teamsRouter.delete('/:id', authorize('ADMIN'), async (req: Request, res: Respons
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+/**
+ * GET /api/teams/:id/audit
+ * Get audit log for a specific team
+ * Admin only
+ */
+teamsRouter.get('/:id/audit', authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const logs = await prisma.auditLog.findMany({
+      where: { teamId: req.params.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    return res.json({ logs });
+  } catch (err) {
+    console.error('Error fetching audit log:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
