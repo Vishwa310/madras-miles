@@ -420,10 +420,10 @@ export default function PlayersOpsPage() {
       {/* Team-Grouped Table */}
       <div className="space-y-3">
         {filteredGroups.map(group => (
-          <div key={group.teamId} className="bg-mm-bg-card border border-mm-border rounded-xl overflow-hidden">
+          <div key={group.teamId} className="border border-mm-border rounded-xl overflow-hidden" style={{ background: `linear-gradient(135deg, ${group.teamEmblem || '#6B7280'}08, ${group.teamEmblem || '#6B7280'}03)` }}>
             {/* Team Header (clickable) */}
             <button onClick={() => toggleTeam(group.teamId)}
-              className="w-full flex items-center justify-between px-5 py-3 hover:bg-mm-bg-card-hover transition">
+              className="w-full flex items-center justify-between px-5 py-3 transition" style={{ background: `${group.teamEmblem || '#6B7280'}12` }}>
               <div className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-md flex-shrink-0" style={{ backgroundColor: group.teamEmblem || '#6B7280' }} />
                 <span className="font-display font-semibold text-sm uppercase tracking-wide">{group.teamName}</span>
@@ -437,10 +437,10 @@ export default function PlayersOpsPage() {
 
             {/* Expanded Members */}
             {group.isExpanded && (
-              <div className="overflow-x-auto" style={{ background: `${group.teamEmblem || '#6B7280'}06` }}>
+              <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] table-fixed">
                 <thead>
-                  <tr className="border-t border-mm-border" style={{ background: `${group.teamEmblem || '#6B7280'}10` }}>
+                  <tr className="border-t border-mm-border">
                     <th className="w-10 px-3 py-2 text-center align-middle"><input type="checkbox" className="accent-mm-orange" onChange={() => {
                       const ids = group.players.map(p => p.id);
                       const allSelected = ids.every(id => selected.has(id));
@@ -465,7 +465,7 @@ export default function PlayersOpsPage() {
                       <td className="w-10 px-3 py-2.5 text-center align-middle"><input type="checkbox" className="accent-mm-orange" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
                       <td className="w-[160px] px-3 py-2.5">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full gradient-hero flex items-center justify-center text-[0.55rem] font-bold text-white flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center text-[0.55rem] font-bold text-white flex-shrink-0" style={{ background: group.teamEmblem || '#6B7280' }}>
                             {p.user.name.split(' ').map(n => n[0]).join('')}
                           </div>
                           <div className="min-w-0">
