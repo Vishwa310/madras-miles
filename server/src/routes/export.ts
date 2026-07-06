@@ -18,12 +18,9 @@ exportRouter.get('/team/:teamId', async (req: Request, res: Response) => {
       include: {
         players: {
           include: {
-            user: { select: { name: true, stravaAthleteId: true, email: true } },
+            user: { select: { name: true, stravaAthleteId: true } },
             activities: {
               orderBy: { startDate: 'desc' },
-            },
-            scores: {
-              orderBy: { date: 'desc' },
             },
           },
         },
@@ -38,58 +35,50 @@ exportRouter.get('/team/:teamId', async (req: Request, res: Response) => {
     const headers = [
       'Player Name',
       'Strava ID',
-      'Email',
       'Gender',
-      'Slot',
       'Status',
       'Activity Date',
       'Activity Type',
       'Distance (km)',
+      'Credited (km)',
       'Duration (min)',
+      'Moving Time (min)',
       'Avg Speed (km/h)',
       'Max Speed (km/h)',
       'Pause (sec)',
       'Activity Status',
       'Rejection Reason',
-      'Points for Day',
     ];
 
     const rows: string[] = [headers.join(',')];
 
     for (const player of team.players) {
       if (player.activities.length === 0) {
-        // Player with no activities — still include them
         rows.push([
           `"${player.user.name}"`,
           player.user.stravaAthleteId,
-          player.user.email || '',
           player.gender,
-          player.slot,
           player.status,
-          '', '', '', '', '', '', '', '', '', '',
+          '', '', '', '', '', '', '', '', '', '', '',
         ].join(','));
       } else {
         for (const act of player.activities) {
-          const dayStr = act.startDate.toISOString().split('T')[0];
-          const dayScore = player.scores.find(s => s.date.toISOString().split('T')[0] === dayStr);
-
           rows.push([
             `"${player.user.name}"`,
             player.user.stravaAthleteId,
-            player.user.email || '',
             player.gender,
-            player.slot,
             player.status,
             act.startDate.toISOString(),
             act.type,
             (act.distanceMeters / 1000).toFixed(2),
+            ((act.creditedMeters || 0) / 1000).toFixed(2),
             (act.durationSeconds / 60).toFixed(1),
+            (act.movingTimeSeconds / 60).toFixed(1),
             (act.avgSpeed * 3.6).toFixed(2),
             (act.maxSpeed * 3.6).toFixed(2),
             (act.elapsedTimeSeconds - act.movingTimeSeconds).toString(),
             act.status,
             `"${act.rejectionReason || ''}"`,
-            dayScore ? dayScore.totalPoints.toString() : '',
           ].join(','));
         }
       }

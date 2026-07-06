@@ -33,10 +33,8 @@ export default function TeamsPage() {
 
   function downloadTeam(id: string, name: string) {
     const token = localStorage.getItem('mm_token');
-    const link = document.createElement('a');
-    link.href = `/api/export/team/${id}`;
-    // Use fetch to include auth header
-    fetch(`/api/export/team/${id}`, {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    fetch(`${apiUrl}/api/export/team/${id}`, {
       headers: { 'Authorization': `Bearer ${token}` },
     })
       .then(res => res.blob())
