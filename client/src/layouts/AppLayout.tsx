@@ -179,7 +179,7 @@ export default function AppLayout() {
 
         {/* Page content */}
         <main className="flex-1 p-8">
-          <Outlet context={{ user }} />
+          <Outlet context={{ user, viewAs }} />
         </main>
       </div>
     </div>

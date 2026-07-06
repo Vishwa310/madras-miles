@@ -77,7 +77,7 @@ function groupByWeek(activities: any[]): WeekGroup[] {
 }
 
 export default function ActivitiesPage() {
-  const { user } = useOutletContext<{ user: any }>();
+  const { user, viewAs } = useOutletContext<{ user: any; viewAs?: string }>();
   const [activities, setActivities] = useState<any[]>([]);
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(1);
@@ -109,7 +109,7 @@ export default function ActivitiesPage() {
 
   if (loading) return <PageLoader />;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN' && viewAs !== 'PLAYER';
   const weeks = groupByWeek(activities);
 
   return (
