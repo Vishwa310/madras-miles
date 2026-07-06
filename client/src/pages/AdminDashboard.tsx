@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { PageLoader } from '../lib/loaders';
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [teams, setTeams] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [playerRankings, setPlayerRankings] = useState<any[]>([]);
@@ -79,8 +80,6 @@ export default function AdminDashboard() {
 
   // Loading state
   if (loading) return <PageLoader />;
-
-  const navigate = useNavigate();
 
   // Computed stats
   const totalPlayers = teams.reduce((s, t) => s + t.playerCount, 0);
