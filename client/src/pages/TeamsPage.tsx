@@ -142,17 +142,42 @@ export default function TeamsPage() {
             {/* Player list */}
             {team.players.length > 0 && (
               <div className="border-t border-mm-border pt-3">
-                <div className="flex flex-wrap gap-2">
-                  {team.players.map((p: any) => (
-                    <span key={p.id} className={`px-2 py-1 rounded-full text-xs font-medium border ${
-                      p.status === 'RETIRED' ? 'bg-mm-hot/10 text-mm-hot border-mm-hot/30 line-through' :
-                      p.status === 'STANDBY' ? 'bg-mm-gold/10 text-mm-gold border-mm-gold/30' :
-                      'bg-mm-teal/10 text-mm-teal border-mm-teal/30'
-                    }`}>
-                      {p.user.name} {p.gender === 'MALE' ? '♂' : '♀'}
-                      {p.status === 'STANDBY' && ' (standby)'}
-                    </span>
-                  ))}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[0.6rem] text-mm-teal uppercase tracking-wider font-semibold mb-2">Active ({team.players.filter((p: any) => p.status === 'ACTIVE').length})</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {team.players.filter((p: any) => p.status === 'ACTIVE').map((p: any) => (
+                        <span key={p.id} className="px-2 py-1 rounded-full text-xs font-medium border bg-mm-teal/10 text-mm-teal border-mm-teal/30">
+                          {p.user.name} {p.gender === 'MALE' ? '♂' : '♀'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[0.6rem] text-mm-gold uppercase tracking-wider font-semibold mb-2">Standby ({team.players.filter((p: any) => p.status === 'STANDBY').length})</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {team.players.filter((p: any) => p.status === 'STANDBY').map((p: any) => (
+                        <span key={p.id} className="px-2 py-1 rounded-full text-xs font-medium border bg-mm-gold/10 text-mm-gold border-mm-gold/30">
+                          {p.user.name} {p.gender === 'MALE' ? '♂' : '♀'}
+                        </span>
+                      ))}
+                      {team.players.filter((p: any) => p.status === 'STANDBY').length === 0 && (
+                        <span className="text-xs text-mm-text-muted">None</span>
+                      )}
+                    </div>
+                    {team.players.filter((p: any) => p.status === 'RETIRED').length > 0 && (
+                      <div className="mt-3">
+                        <div className="text-[0.6rem] text-mm-hot uppercase tracking-wider font-semibold mb-1.5">Retired</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {team.players.filter((p: any) => p.status === 'RETIRED').map((p: any) => (
+                            <span key={p.id} className="px-2 py-1 rounded-full text-xs font-medium border bg-mm-hot/10 text-mm-hot border-mm-hot/30 line-through">
+                              {p.user.name} {p.gender === 'MALE' ? '♂' : '♀'}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
