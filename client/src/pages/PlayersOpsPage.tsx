@@ -437,11 +437,11 @@ export default function PlayersOpsPage() {
 
             {/* Expanded Members */}
             {group.isExpanded && (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" style={{ background: `${group.teamEmblem || '#6B7280'}06` }}>
               <table className="w-full min-w-[900px] table-fixed">
                 <thead>
-                  <tr className="border-t border-mm-border">
-                    <th className="w-10 px-3 py-2"><input type="checkbox" className="accent-mm-orange" onChange={() => {
+                  <tr className="border-t border-mm-border" style={{ background: `${group.teamEmblem || '#6B7280'}10` }}>
+                    <th className="w-10 px-3 py-2 text-center align-middle"><input type="checkbox" className="accent-mm-orange" onChange={() => {
                       const ids = group.players.map(p => p.id);
                       const allSelected = ids.every(id => selected.has(id));
                       const next = new Set(selected);
@@ -462,7 +462,7 @@ export default function PlayersOpsPage() {
                 <tbody>
                   {group.players.map(p => (
                     <tr key={p.id} className={`border-t border-mm-border/50 hover:bg-mm-bg-primary/30 transition ${p.status === 'RETIRED' ? 'opacity-50' : ''}`}>
-                      <td className="w-10 px-3 py-2.5"><input type="checkbox" className="accent-mm-orange" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
+                      <td className="w-10 px-3 py-2.5 text-center align-middle"><input type="checkbox" className="accent-mm-orange" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
                       <td className="w-[160px] px-3 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full gradient-hero flex items-center justify-center text-[0.55rem] font-bold text-white flex-shrink-0">
