@@ -65,31 +65,31 @@
   --color-mm-border: #2a2a40;
 
   /* Fonts */
-  --font-display: 'Rajdhani', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
 /* Light Theme Override */
 [data-theme="light"] {
-  --color-mm-bg-primary: #f8f9fc;
-  --color-mm-bg-secondary: #ffffff;
+  --color-mm-bg-primary: #faf8f6;
+  --color-mm-bg-secondary: #fff8f4;
   --color-mm-bg-card: #ffffff;
-  --color-mm-bg-card-hover: #f1f3f8;
-  --color-mm-bg-elevated: #e8ebf0;
+  --color-mm-bg-card-hover: #fef4ee;
+  --color-mm-bg-elevated: #f0ebe6;
 
   --color-mm-orange: #e85d2a;
-  --color-mm-gold: #d4a012;
+  --color-mm-gold: #c9880a;
   --color-mm-teal: #059669;
   --color-mm-purple: #6d28d9;
-  --color-mm-hot: #e5004e;
+  --color-mm-hot: #d9004a;
   --color-mm-blue: #0891b2;
 
-  --color-mm-text-primary: #1a1a2e;
-  --color-mm-text-secondary: #4a4a68;
-  --color-mm-text-muted: #8888a0;
+  --color-mm-text-primary: #1c1917;
+  --color-mm-text-secondary: #57534e;
+  --color-mm-text-muted: #a8a29e;
 
-  --color-mm-border: #e2e4ea;
+  --color-mm-border: #e7e0d8;
 }
 
 /* Base styles */
@@ -238,9 +238,15 @@ button:active::after {
   color: #ffffff;
 }
 
-/* Cards get subtle shadow in light mode */
+/* Cards get subtle warm shadow in light mode */
 [data-theme="light"] .bg-mm-bg-card {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(232, 93, 42, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* Sidebar gets a warm tint in light mode */
+[data-theme="light"] .bg-mm-bg-secondary {
+  background-color: #fff8f4;
+  border-color: #f0e4dc;
 }
 
 /* Rail active state — pace marker + trailing glow */
