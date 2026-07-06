@@ -230,6 +230,14 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
       else rejected++;
     }
 
+    // Tier 1 fraud detection — runs on saved data, no extra API calls
+    const { runFraudDetection } = await import('../services/fraud');
+    const fraudResults = await runFraudDetection(player.id, new Date(Date.now() - 60000)); // check activities saved in last minute
+    const fraudFlagged = fraudResults.length;
+    if (fraudFlagged > 0) {
+      accepted -= fraudFlagged; // they were accepted, now flagged
+    }
+
     return res.json({
       player: player.user.name,
       status: 'done',
@@ -237,6 +245,7 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
       accepted,
       rejected,
       skipped,
+      flagged: fraudFlagged,
     });
   } catch (err: any) {
     console.error('Single player sync error:', err);

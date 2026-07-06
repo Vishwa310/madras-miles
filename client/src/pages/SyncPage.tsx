@@ -7,7 +7,7 @@ export default function SyncPage() {
   const [loading, setLoading] = useState(true);
   const [syncAfter, setSyncAfter] = useState('');
   const [history, setHistory] = useState<any[]>([]);
-  const [syncLog, setSyncLog] = useState<{ player: string; status: string; activities?: number; accepted?: number; rejected?: number; skipped?: number; reason?: string }[]>([]);
+  const [syncLog, setSyncLog] = useState<{ player: string; status: string; activities?: number; accepted?: number; rejected?: number; skipped?: number; flagged?: number; reason?: string }[]>([]);
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, currentPlayer: '', done: false });
   const [syncSummary, setSyncSummary] = useState<{ totalFetched: number; totalAccepted: number; totalRejected: number; totalSkipped: number } | null>(null);
   const [challenge, setChallenge] = useState<any>(null);
@@ -62,6 +62,7 @@ export default function SyncPage() {
             accepted: result.accepted,
             rejected: result.rejected,
             skipped: result.skipped,
+            flagged: result.flagged,
             reason: result.reason,
           }]);
           totalFetched += result.activities || 0;
@@ -224,6 +225,7 @@ export default function SyncPage() {
                     <div className="flex gap-3 flex-shrink-0 ml-2">
                       {(log.accepted || 0) > 0 && <span className="text-mm-teal font-semibold">+{log.accepted} ✓</span>}
                       {(log.rejected || 0) > 0 && <span className="text-mm-hot font-semibold">{log.rejected} ✗</span>}
+                      {(log.flagged || 0) > 0 && <span className="text-mm-gold font-semibold">{log.flagged} ⚠</span>}
                       {(log.skipped || 0) > 0 && <span className="text-mm-text-muted">{log.skipped} dup</span>}
                       <span className="text-mm-text-muted">{log.activities} found</span>
                     </div>

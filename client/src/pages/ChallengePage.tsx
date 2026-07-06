@@ -180,6 +180,9 @@ export default function ChallengePage() {
             <RuleRow rule={`Daily cap exceeded (>${form.maxDailyKm} km) — partial credit applied`} action="accepted" />
             <RuleRow rule="Activity outside allowed time window (weekday 4-9AM/5-10PM, weekend 4AM-10PM)" action="flagged" />
             <RuleRow rule="Duplicate activity (already synced)" action="rejected" />
+            <RuleRow rule="Suspicious pause: elapsed time > 1.8× moving time" action="flagged" />
+            <RuleRow rule="Speed spike: max speed > 2.5× average speed" action="flagged" />
+            <RuleRow rule="Overlapping activities (same player, same time)" action="flagged" />
           </tbody>
         </table>
       </div>
