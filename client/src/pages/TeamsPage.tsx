@@ -106,16 +106,16 @@ export default function TeamsPage() {
       {/* Teams grid */}
       <div className="grid grid-cols-2 gap-5">
         {teams.map(team => (
-          <div key={team.id} className="border border-mm-border rounded-2xl p-6 hover:border-mm-orange/30 transition group" style={{ background: `linear-gradient(135deg, ${team.emblem || '#6B7280'}08, ${team.emblem || '#6B7280'}03)` }}>
+          <div key={team.id} className="rounded-2xl p-6 transition group" style={{
+            background: `linear-gradient(135deg, ${team.emblem || '#6B7280'}15, ${team.emblem || '#6B7280'}05)`,
+            border: `1px solid ${team.emblem || '#6B7280'}40`,
+          }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl" style={{ backgroundColor: team.emblem || '#6B7280' }} />
-                <div>
-                  <h3 className="font-display text-lg font-bold">{team.name}</h3>
-                  <p className="text-xs text-mm-text-muted">
-                    {team.captain ? `Captain: ${team.captain.name}` : 'No captain assigned'}
-                  </p>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: team.emblem || '#6B7280' }}>
+                  <span className="icon text-white" style={{ fontSize: '20px' }}>shield</span>
                 </div>
+                <h3 className="font-display text-lg font-bold">{team.name}</h3>
               </div>
               <button onClick={() => deleteTeam(team.id)}
                 className="opacity-0 group-hover:opacity-100 text-mm-text-muted hover:text-mm-hot transition">
