@@ -31,23 +31,36 @@ substitutionsRouter.post('/', async (req: Request, res: Response) => {
     if (retired.teamId !== sub.teamId) return res.status(400).json({ error: 'Players must be on the same team' });
     if (sub.status === 'ACTIVE') return res.status(400).json({ error: 'Replacement player is already active' });
 
-    // Max 5 substitutions per team
+    // Load challenge config for dynamic substitution rules
+    const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
+    const maxSubs = challenge?.maxSubstitutions ?? 5;
+    const maleCanReturn = challenge?.maleCanReturn ?? false;
+    const femaleCanReturn = challenge?.femaleCanReturn ?? true;
+    const maxReturns = challenge?.maxReturns ?? 1;
+
+    // Max substitutions per team
     const teamSubCount = await prisma.substitutionLog.count({ where: { teamId: retired.teamId } });
-    if (teamSubCount >= 5) {
-      return res.status(400).json({ error: 'Team has reached maximum 5 substitutions' });
+    if (teamSubCount >= maxSubs) {
+      return res.status(400).json({ error: `Team has reached maximum ${maxSubs} substitutions` });
     }
 
     if (sub.status === 'RETIRED') {
-      // Check if the sub is female (females can return)
-      if (sub.gender === 'MALE') {
-        return res.status(400).json({ error: 'Retired male players cannot come back' });
+      // Check return eligibility based on gender
+      if (sub.gender === 'MALE' && !maleCanReturn) {
+        return res.status(400).json({ error: 'Retired male players cannot come back (config: maleCanReturn=false)' });
       }
-      // Female can return only once — check if she has already been reactivated before
+      if (sub.gender === 'FEMALE' && !femaleCanReturn) {
+        return res.status(400).json({ error: 'Retired female players cannot come back (config: femaleCanReturn=false)' });
+      }
+      // Check max return count
+      if (maxReturns === 0) {
+        return res.status(400).json({ error: 'No returns allowed (config: maxReturns=0)' });
+      }
       const previousReturns = await prisma.substitutionLog.count({
         where: { substitutePlayerId: sub.id },
       });
-      if (previousReturns >= 1) {
-        return res.status(400).json({ error: 'Female player has already returned once — cannot return again' });
+      if (previousReturns >= maxReturns) {
+        return res.status(400).json({ error: `Player has already returned ${maxReturns} time(s) — cannot return again` });
       }
     }
 

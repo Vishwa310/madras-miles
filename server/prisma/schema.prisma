@@ -247,7 +247,7 @@ model SubstitutionLog {
 
 model ChallengeConfig {
   id                        String   @id @default(cuid())
-  name                      String   // e.g., "Madras Miles 2026"
+  name                      String   // e.g., "Madras Walkathon 2026"
   startDate                 DateTime @map("start_date")
   endDate                   DateTime @map("end_date")
   allowedActivityTypes      Json     @default("[\"WALK\"]") @map("allowed_activity_types")
@@ -257,10 +257,20 @@ model ChallengeConfig {
   minPaceMinPerKm          Float    @default(9) @map("min_pace_min_per_km")
   maxPaceMinPerKm          Float    @default(16) @map("max_pace_min_per_km")
   minDistancePerActivity   Float    @default(1000) @map("min_distance_per_activity") // meters
+
+  // Roster config
   maxPlayersWeek1          Int      @default(12) @map("max_players_week1")
   maxPlayersWeek2          Int      @default(15) @map("max_players_week2")
   maxPlayersWeek3          Int      @default(18) @map("max_players_week3")
+  useConstantRoster        Boolean  @default(false) @map("use_constant_roster") // if true, all weeks use week1 value
   minFemalePerWeek         Int      @default(3) @map("min_female_per_week")
+
+  // Substitution rules
+  maxSubstitutions         Int      @default(5) @map("max_substitutions") // per team
+  maleCanReturn            Boolean  @default(false) @map("male_can_return") // can retired males come back?
+  femaleCanReturn          Boolean  @default(true) @map("female_can_return") // can retired females come back?
+  maxReturns               Int      @default(1) @map("max_returns") // how many times can a player return (0 = never)
+
   isActive                 Boolean  @default(true) @map("is_active")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @updatedAt @map("updated_at")

@@ -14,7 +14,12 @@ export default function ChallengePage() {
     maxPlayersWeek1: 12,
     maxPlayersWeek2: 15,
     maxPlayersWeek3: 18,
+    useConstantRoster: false,
     minFemalePerWeek: 3,
+    maxSubstitutions: 5,
+    maleCanReturn: false,
+    femaleCanReturn: true,
+    maxReturns: 1,
   });
   const [saving, setSaving] = useState(false);
 
@@ -35,7 +40,12 @@ export default function ChallengePage() {
         maxPlayersWeek1: data.config.maxPlayersWeek1 ?? 12,
         maxPlayersWeek2: data.config.maxPlayersWeek2 ?? 15,
         maxPlayersWeek3: data.config.maxPlayersWeek3 ?? 18,
+        useConstantRoster: data.config.useConstantRoster ?? false,
         minFemalePerWeek: data.config.minFemalePerWeek ?? 3,
+        maxSubstitutions: data.config.maxSubstitutions ?? 5,
+        maleCanReturn: data.config.maleCanReturn ?? false,
+        femaleCanReturn: data.config.femaleCanReturn ?? true,
+        maxReturns: data.config.maxReturns ?? 1,
       });
     }
   }
@@ -114,35 +124,66 @@ export default function ChallengePage() {
         </Section>
 
         {/* Weekly Roster */}
-        <Section title="Weekly Active Roster" icon="groups">
+        {/* Substitution Rules */}
+        <Section title="Substitution Rules" icon="swap_horiz">
           <div className="grid grid-cols-4 gap-4">
-            <Field label="Week 1 Active Players" type="number" value={form.maxPlayersWeek1} onChange={v => setForm({...form, maxPlayersWeek1: +v})} />
-            <Field label="Week 2 Active Players" type="number" value={form.maxPlayersWeek2} onChange={v => setForm({...form, maxPlayersWeek2: +v})} />
-            <Field label="Week 3 Active Players" type="number" value={form.maxPlayersWeek3} onChange={v => setForm({...form, maxPlayersWeek3: +v})} />
-            <Field label="Min Female per Week" type="number" value={form.minFemalePerWeek} onChange={v => setForm({...form, minFemalePerWeek: +v})} />
+            <Field label="Max Subs per Team" type="number" value={form.maxSubstitutions} onChange={v => setForm({...form, maxSubstitutions: +v})} />
+            <Field label="Max Returns per Player" type="number" value={form.maxReturns} onChange={v => setForm({...form, maxReturns: +v})} />
+            <div>
+              <label className="text-xs text-mm-text-muted uppercase tracking-wider">Male Can Return?</label>
+              <select value={form.maleCanReturn ? 'yes' : 'no'} onChange={e => setForm({...form, maleCanReturn: e.target.value === 'yes'})}
+                className="w-full mt-1 px-4 py-2.5 bg-mm-bg-primary border border-mm-border rounded-lg text-sm focus:border-mm-orange outline-none">
+                <option value="no">No — retired permanently</option>
+                <option value="yes">Yes — can return</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-mm-text-muted uppercase tracking-wider">Female Can Return?</label>
+              <select value={form.femaleCanReturn ? 'yes' : 'no'} onChange={e => setForm({...form, femaleCanReturn: e.target.value === 'yes'})}
+                className="w-full mt-1 px-4 py-2.5 bg-mm-bg-primary border border-mm-border rounded-lg text-sm focus:border-mm-orange outline-none">
+                <option value="yes">Yes — can return</option>
+                <option value="no">No — retired permanently</option>
+              </select>
+            </div>
           </div>
           <p className="text-xs text-mm-text-muted mt-2">
-            Admin assigns which players are active each week. Only active players' activities count for scoring.
+            {form.maxReturns === 0 ? 'No player can return once retired.' : `Players can return up to ${form.maxReturns} time(s).`}
+            {' '}Male: {form.maleCanReturn ? '✅ can return' : '❌ permanent'}. Female: {form.femaleCanReturn ? '✅ can return' : '❌ permanent'}.
           </p>
         </Section>
 
-        {/* Rest Day & Substitution (info only) */}
-        <Section title="Other Rules (auto-enforced)" icon="rule">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-mm-bg-primary rounded-lg border border-mm-border">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="icon-sm text-mm-orange">hotel</span>
-                <span className="text-sm font-semibold">Mandatory Rest Day</span>
-              </div>
-              <p className="text-xs text-mm-text-muted">Cannot walk 7 consecutive days. If player does, 7th day is automatically treated as rest day (not scored). First 6 days count.</p>
+        {/* Roster Config */}
+        <Section title="Weekly Active Roster" icon="groups">
+          <div className="mb-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={form.useConstantRoster} onChange={e => setForm({...form, useConstantRoster: e.target.checked})} className="accent-mm-orange w-4 h-4" />
+              <span className="text-sm">Use constant roster size (same number every week)</span>
+            </label>
+          </div>
+          {form.useConstantRoster ? (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Players per Week (all weeks)" type="number" value={form.maxPlayersWeek1} onChange={v => setForm({...form, maxPlayersWeek1: +v, maxPlayersWeek2: +v, maxPlayersWeek3: +v})} />
+              <Field label="Min Female per Week" type="number" value={form.minFemalePerWeek} onChange={v => setForm({...form, minFemalePerWeek: +v})} />
             </div>
-            <div className="p-4 bg-mm-bg-primary rounded-lg border border-mm-border">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="icon-sm text-mm-orange">swap_horiz</span>
-                <span className="text-sm font-semibold">Substitution Rules</span>
-              </div>
-              <p className="text-xs text-mm-text-muted">Male substitution is permanent (cannot return). Female substitution is reversible (can be reactivated). Sub timestamp determines scoring window.</p>
+          ) : (
+            <div className="grid grid-cols-4 gap-4">
+              <Field label="Week 1 Active Players" type="number" value={form.maxPlayersWeek1} onChange={v => setForm({...form, maxPlayersWeek1: +v})} />
+              <Field label="Week 2 Active Players" type="number" value={form.maxPlayersWeek2} onChange={v => setForm({...form, maxPlayersWeek2: +v})} />
+              <Field label="Week 3 Active Players" type="number" value={form.maxPlayersWeek3} onChange={v => setForm({...form, maxPlayersWeek3: +v})} />
+              <Field label="Min Female per Week" type="number" value={form.minFemalePerWeek} onChange={v => setForm({...form, minFemalePerWeek: +v})} />
             </div>
+          )}
+          <p className="text-xs text-mm-text-muted mt-2">
+            {form.useConstantRoster
+              ? `All weeks: ${form.maxPlayersWeek1} players active (min ${form.minFemalePerWeek} female).`
+              : `W1: ${form.maxPlayersWeek1} → W2: ${form.maxPlayersWeek2} → W3: ${form.maxPlayersWeek3} players (min ${form.minFemalePerWeek} female each week).`}
+          </p>
+        </Section>
+
+        {/* Rest Day (info only) */}
+        <Section title="Rest Day (auto-enforced)" icon="hotel">
+          <div className="p-4 bg-mm-bg-primary rounded-lg border border-mm-border">
+            <p className="text-xs text-mm-text-muted">Cannot walk 7 consecutive days. If player does, 7th day is automatically treated as rest day (rejected). First 6 days count.</p>
           </div>
         </Section>
 
