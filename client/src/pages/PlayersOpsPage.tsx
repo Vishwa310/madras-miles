@@ -430,7 +430,7 @@ export default function PlayersOpsPage() {
                 <span className="text-xs text-mm-text-muted">{group.players.length} players</span>
               </div>
               <div className="flex items-center gap-5">
-                <span className="text-xs text-mm-gold font-display font-semibold">{group.totalPoints} pts</span>
+                <span className="text-xs text-mm-gold font-display font-semibold">{typeof group.totalPoints === 'number' ? group.totalPoints.toFixed(2) : group.totalPoints} pts</span>
                 <span className={`icon-sm text-mm-text-muted transition-transform ${group.isExpanded ? 'rotate-180' : ''}`}>expand_more</span>
               </div>
             </button>

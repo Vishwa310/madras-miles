@@ -98,7 +98,7 @@ export default function AdminDashboard() {
   const progressPct = totalDays > 0 ? Math.min(100, (daysPassed / totalDays) * 100) : 0;
 
   // Fun stats for mailers
-  const avgKmPerPlayer = totalPlayers > 0 ? (totalKm / totalPlayers).toFixed(1) : '0';
+  const avgKmPerPlayer = totalPlayers > 0 ? (totalKm / totalPlayers).toFixed(2) : '0';
   const topPlayer = playerRankings[0];
 
   return (
@@ -203,7 +203,7 @@ export default function AdminDashboard() {
                   </div>
                   {/* Stats */}
                   <div className="text-right flex-shrink-0 w-24">
-                    <div className="font-display text-lg font-bold" style={{ color: t.teamEmblem }}>{t.totalKm.toFixed(1)} km</div>
+                    <div className="font-display text-lg font-bold" style={{ color: t.teamEmblem }}>{t.totalKm.toFixed(2)} km</div>
                   </div>
                 </div>
               );
@@ -230,7 +230,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-display text-lg font-bold text-mm-teal">{(p.totalKm || 0).toFixed(1)}</div>
+                <div className="font-display text-lg font-bold text-mm-teal">{(p.totalKm || 0).toFixed(2)}</div>
                 <div className="text-[0.6rem] text-mm-text-muted">km</div>
               </div>
             </div>
@@ -248,7 +248,7 @@ export default function AdminDashboard() {
             <p className="text-sm text-mm-text-secondary leading-relaxed">
               🦶 <strong className="text-white">{totalPlayers} warriors</strong> have taken roughly
               <strong className="text-mm-teal"> {(totalKm * 1312).toLocaleString()} steps</strong> combined.
-              That's {totalKm >= 42 ? `${(totalKm / 42.195).toFixed(1)} marathons` : `${(totalKm / 5).toFixed(0)} park runs`} worth of walking!
+              That's {totalKm >= 42 ? `${(totalKm / 42.195).toFixed(2)} marathons` : `${(totalKm / 5).toFixed(0)} park runs`} worth of walking!
             </p>
           </div>
           <div className="bg-mm-bg-primary/50 rounded-xl p-4 border border-mm-border">
@@ -260,7 +260,7 @@ export default function AdminDashboard() {
           <div className="bg-mm-bg-primary/50 rounded-xl p-4 border border-mm-border">
             <p className="text-sm text-mm-text-secondary leading-relaxed">
               🏆 <strong className="text-mm-gold">{topPlayer?.playerName || '—'}</strong> is the current beast with
-              <strong className="text-mm-teal"> {(topPlayer?.totalKm || 0).toFixed(1)} km</strong>.
+              <strong className="text-mm-teal"> {(topPlayer?.totalKm || 0).toFixed(2)} km</strong>.
               {(topPlayer?.totalKm || 0) >= 50 ? " Somebody check if they're secretly running! 👀" : " Keep pushing, legend!"}
             </p>
           </div>

@@ -143,7 +143,7 @@ export default function ActivitiesPage() {
               </div>
               <div className="flex items-center gap-4 text-xs text-mm-text-muted">
                 <span className="flex items-center gap-1.5 font-display font-semibold text-mm-teal text-sm">
-                  {week.totalKm.toFixed(1)} km
+                  {week.totalKm.toFixed(2)} km
                 </span>
                 <span className="text-mm-border">|</span>
                 <span>{week.accepted} activities counted</span>

@@ -135,7 +135,7 @@ export default function CaptainTeamView() {
                 {a.status === 'FLAGGED' ? 'warning' : 'cancel'}
               </span>
               <div className="flex-1">
-                <div className="text-sm">{a.player?.user?.name} — {(a.distanceMeters / 1000).toFixed(1)} km</div>
+                <div className="text-sm">{a.player?.user?.name} — {(a.distanceMeters / 1000).toFixed(2)} km</div>
                 <div className="text-xs text-mm-text-muted">{a.rejectionReason}</div>
               </div>
               <span className={`px-2 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase border ${

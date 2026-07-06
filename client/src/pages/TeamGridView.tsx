@@ -228,7 +228,7 @@ export default function TeamGridView() {
                                   act.status === 'REJECTED' ? 'bg-mm-hot/15 text-mm-hot border border-mm-hot/30' :
                                   'bg-mm-gold/15 text-mm-gold border border-mm-gold/30'
                                 } ${!matchesFilter ? 'opacity-10' : ''}`}>
-                                  {((act.creditedMeters || act.distanceMeters) / 1000).toFixed(1)}
+                                  {((act.creditedMeters || act.distanceMeters) / 1000).toFixed(2)}
                                 </div>
                               );
                             })}
