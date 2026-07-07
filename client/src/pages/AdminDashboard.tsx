@@ -202,8 +202,9 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   {/* Stats */}
-                  <div className="text-right flex-shrink-0 w-24">
-                    <div className="font-display text-lg font-bold" style={{ color: t.teamEmblem }}>{t.totalKm.toFixed(2)} km</div>
+                  <div className="text-right flex-shrink-0 w-28">
+                    <div className="font-display text-lg font-bold truncate" style={{ color: t.teamEmblem }}>{t.totalKm.toFixed(2)} km</div>
+                    <div className="text-[0.6rem] text-mm-text-muted">{t.totalActivities} activities</div>
                   </div>
                 </div>
               );

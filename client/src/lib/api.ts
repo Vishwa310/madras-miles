@@ -2,6 +2,21 @@ import { API_URL } from './config';
 
 const API_BASE = `${API_URL}/api`;
 
+// Global loading state
+let activeRequests = 0;
+function showLoader() {
+  activeRequests++;
+  const el = document.getElementById('global-loader');
+  if (el) el.style.opacity = '1';
+}
+function hideLoader() {
+  activeRequests = Math.max(0, activeRequests - 1);
+  if (activeRequests === 0) {
+    const el = document.getElementById('global-loader');
+    if (el) el.style.opacity = '0';
+  }
+}
+
 function getToken(): string | null {
   return localStorage.getItem('mm_token');
 }
@@ -36,15 +51,20 @@ async function request(path: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  showLoader();
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
-  if (res.status === 401) {
-    clearToken();
-    window.location.href = '/login';
-    throw new Error('Unauthorized');
+    if (res.status === 401) {
+      clearToken();
+      window.location.href = '/login';
+      throw new Error('Unauthorized');
+    }
+
+    return res.json();
+  } finally {
+    hideLoader();
   }
-
-  return res.json();
 }
 
 export const api = {
