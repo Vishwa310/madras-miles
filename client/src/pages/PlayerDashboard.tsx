@@ -100,9 +100,16 @@ export default function PlayerDashboard() {
 
         {/* Last sync info */}
         {lastSync && (
-          <div className="mt-2 flex items-center gap-2 text-xs text-mm-text-muted">
-            <span className="icon-sm" style={{ fontSize: '14px' }}>sync</span>
-            Last synced: <span className="font-semibold text-mm-text-secondary">{new Date(lastSync).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+          <div className="mt-3 px-4 py-2.5 rounded-xl bg-mm-bg-card border border-mm-border flex items-center gap-3">
+            <span className="icon text-mm-orange" style={{ fontSize: '18px' }}>sync</span>
+            <div>
+              <div className="text-xs text-mm-text-secondary">
+                Data last refreshed: <span className="font-semibold text-mm-orange">{new Date(lastSync).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+              <div className="text-[0.6rem] text-mm-text-muted mt-0.5">
+                Missing your latest walk? Relax — the sync gods haven't run yet. Your steps are safe on Strava. 🧘
+              </div>
+            </div>
           </div>
         )}
 

@@ -169,10 +169,6 @@ export default function AppLayout() {
                 ))}
               </div>
             )}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-mm-bg-card border border-mm-border rounded-full text-xs text-mm-text-secondary">
-              <span className="w-1.5 h-1.5 rounded-full bg-mm-teal animate-pulse" />
-              Synced
-            </div>
             <span className="text-sm text-mm-text-secondary">{user.name}</span>
           </div>
         </header>
