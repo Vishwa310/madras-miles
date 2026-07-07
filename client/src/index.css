@@ -72,11 +72,11 @@
 
 /* Light Theme Override */
 [data-theme="light"] {
-  --color-mm-bg-primary: #faf8f6;
-  --color-mm-bg-secondary: #fff8f4;
-  --color-mm-bg-card: #ffffff;
-  --color-mm-bg-card-hover: #fef4ee;
-  --color-mm-bg-elevated: #f0ebe6;
+  --color-mm-bg-primary: #f5f0eb;
+  --color-mm-bg-secondary: #faf5f0;
+  --color-mm-bg-card: #fdf9f5;
+  --color-mm-bg-card-hover: #f7ede4;
+  --color-mm-bg-elevated: #ebe4dc;
 
   --color-mm-orange: #e85d2a;
   --color-mm-gold: #c9880a;
@@ -85,11 +85,11 @@
   --color-mm-hot: #d9004a;
   --color-mm-blue: #0891b2;
 
-  --color-mm-text-primary: #1c1917;
-  --color-mm-text-secondary: #57534e;
-  --color-mm-text-muted: #a8a29e;
+  --color-mm-text-primary: #2c2418;
+  --color-mm-text-secondary: #5c5040;
+  --color-mm-text-muted: #9a8e80;
 
-  --color-mm-border: #e7e0d8;
+  --color-mm-border: #e0d6ca;
 }
 
 /* Base styles */
