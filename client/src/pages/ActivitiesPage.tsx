@@ -110,7 +110,7 @@ export default function ActivitiesPage() {
   if (loading) return <PageLoader />;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const isAdmin = user?.role === 'ADMIN' && viewAs !== 'PLAYER';
-  const weeks = groupByWeek(activities);
+  const weeks = groupByWeek(isAdmin ? activities : activities.filter(a => a.status !== 'FLAGGED'));
 
   return (
     <div>
@@ -120,7 +120,7 @@ export default function ActivitiesPage() {
           <p className="text-sm text-mm-text-muted mt-1">{total} activities total</p>
         </div>
         <div className="flex gap-2">
-          {['', 'ACCEPTED', 'REJECTED', 'FLAGGED'].map(f => (
+          {(isAdmin ? ['', 'ACCEPTED', 'REJECTED', 'FLAGGED'] : ['', 'ACCEPTED', 'REJECTED']).map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-4 py-2 rounded-full text-xs font-semibold uppercase transition ${
                 filter === f ? 'gradient-hero text-white' : 'bg-mm-bg-card border border-mm-border text-mm-text-secondary hover:text-white'

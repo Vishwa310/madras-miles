@@ -26,14 +26,14 @@ export async function validateActivity(
     return reject(`Only Walk activities allowed (got '${rawActivity.type}')`);
   }
 
-  // 3. GPS polyline check
+  // 3. GPS polyline check — flag for review (treadmill possible)
   if (!rawActivity.map?.summary_polyline) {
-    return reject('No GPS route data recorded');
+    return { status: 'FLAGGED', reason: 'No GPS route data — possible treadmill activity' };
   }
 
-  // 4. GPS start location check
+  // 4. GPS start location check — flag for review
   if (!rawActivity.start_latlng || rawActivity.start_latlng.length === 0) {
-    return reject('No GPS start location');
+    return { status: 'FLAGGED', reason: 'No GPS start location — needs manual review' };
   }
 
   // 5. Challenge date window check

@@ -22,6 +22,7 @@ export default function PlayerDashboard() {
   const [activities, setActivities] = useState<any[]>([]);
   const [scores, setScores] = useState<any>(null);
   const [challenge, setChallenge] = useState<any>(null);
+  const [lastSync, setLastSync] = useState<string | null>(null);
   const [quoteIndex, setQuoteIndex] = useState(0);
 
   useEffect(() => { loadData(); }, []);
@@ -37,12 +38,14 @@ export default function PlayerDashboard() {
 
     // Fetch only this player's activities
     const playerId = userData.user.player?.id;
-    const [actData, challengeData] = await Promise.all([
+    const [actData, challengeData, syncData] = await Promise.all([
       playerId ? api.get(`/activities?playerId=${playerId}&limit=50`) : Promise.resolve({ activities: [] }),
       api.get('/challenge'),
+      api.get('/sync/status'),
     ]);
     setActivities(actData.activities || []);
     setChallenge(challengeData.config || null);
+    setLastSync(syncData.lastSync?.completedAt || syncData.lastSync?.startedAt || null);
 
     if (userData.user.player) {
       const scoreData = await api.get(`/scores/player/${userData.user.player.id}`);
@@ -94,6 +97,14 @@ export default function PlayerDashboard() {
             </div>
           )}
         </div>
+
+        {/* Last sync info */}
+        {lastSync && (
+          <div className="mt-2 flex items-center gap-2 text-xs text-mm-text-muted">
+            <span className="icon-sm" style={{ fontSize: '14px' }}>sync</span>
+            Last synced: <span className="font-semibold text-mm-text-secondary">{new Date(lastSync).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+        )}
 
         {/* Team name - prominent */}
         {user.player?.team ? (
