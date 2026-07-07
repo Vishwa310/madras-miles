@@ -107,7 +107,7 @@ export default function PlayerDashboard() {
                 Data last refreshed: <span className="font-semibold text-mm-orange">{new Date(lastSync).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
               </div>
               <div className="text-[0.6rem] text-mm-text-muted mt-0.5">
-                Missing your latest walk? Relax — the sync gods haven't run yet. Your steps are safe on Strava. 🧘
+                Missing activities? Your walk happened. We believe you. But our sync runs on IST — Indian Sync Time. Slightly delayed, always accurate. 🇮🇳⏰
               </div>
             </div>
           </div>
