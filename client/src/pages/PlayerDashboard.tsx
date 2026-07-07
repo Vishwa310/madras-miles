@@ -100,14 +100,16 @@ export default function PlayerDashboard() {
 
         {/* Last sync info */}
         {lastSync && (
-          <div className="mt-3 px-4 py-2.5 rounded-xl bg-mm-bg-card border border-mm-border flex items-center gap-3">
-            <span className="icon text-mm-orange" style={{ fontSize: '18px' }}>sync</span>
-            <div>
-              <div className="text-xs text-mm-text-secondary">
-                Data last refreshed: <span className="font-semibold text-mm-orange">{new Date(lastSync).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
-              <div className="text-[0.6rem] text-mm-text-muted mt-0.5">
-                Missing activities? Your walk happened. We believe you. But our sync runs on IST — Indian Sync Time. Slightly delayed, always accurate. 🇮🇳⏰
+          <div className="mt-3 px-4 py-3 rounded-xl bg-mm-orange/5 border border-mm-orange/20">
+            <div className="flex items-center gap-3">
+              <span className="icon text-mm-orange" style={{ fontSize: '22px' }}>sync</span>
+              <div>
+                <div className="text-sm text-mm-text-primary font-semibold">
+                  Data last refreshed: <span className="text-mm-orange">{new Date(lastSync).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div className="text-xs text-mm-text-secondary mt-1">
+                  Missing activities? Your walk happened. We believe you. But our sync runs on IST — Indian Sync Time. Slightly delayed but always accurate. 🇮🇳⏰
+                </div>
               </div>
             </div>
           </div>
