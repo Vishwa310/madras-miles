@@ -262,6 +262,7 @@ model ChallengeConfig {
   maxPlayersWeek1          Int      @default(12) @map("max_players_week1")
   maxPlayersWeek2          Int      @default(15) @map("max_players_week2")
   maxPlayersWeek3          Int      @default(18) @map("max_players_week3")
+  maxPlayersWeek4          Int      @default(15) @map("max_players_week4")
   useConstantRoster        Boolean  @default(false) @map("use_constant_roster") // if true, all weeks use week1 value
   minFemalePerWeek         Int      @default(3) @map("min_female_per_week")
 

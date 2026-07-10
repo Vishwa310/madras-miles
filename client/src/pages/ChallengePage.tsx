@@ -14,6 +14,7 @@ export default function ChallengePage() {
     maxPlayersWeek1: 12,
     maxPlayersWeek2: 15,
     maxPlayersWeek3: 18,
+    maxPlayersWeek4: 15,
     useConstantRoster: false,
     minFemalePerWeek: 3,
     maxSubstitutions: 5,
@@ -40,6 +41,7 @@ export default function ChallengePage() {
         maxPlayersWeek1: data.config.maxPlayersWeek1 ?? 12,
         maxPlayersWeek2: data.config.maxPlayersWeek2 ?? 15,
         maxPlayersWeek3: data.config.maxPlayersWeek3 ?? 18,
+        maxPlayersWeek4: data.config.maxPlayersWeek4 ?? 15,
         useConstantRoster: data.config.useConstantRoster ?? false,
         minFemalePerWeek: data.config.minFemalePerWeek ?? 3,
         maxSubstitutions: data.config.maxSubstitutions ?? 5,
@@ -170,20 +172,21 @@ export default function ChallengePage() {
               <Field label="Week 1 Active Players" type="number" value={form.maxPlayersWeek1} onChange={v => setForm({...form, maxPlayersWeek1: +v})} />
               <Field label="Week 2 Active Players" type="number" value={form.maxPlayersWeek2} onChange={v => setForm({...form, maxPlayersWeek2: +v})} />
               <Field label="Week 3 Active Players" type="number" value={form.maxPlayersWeek3} onChange={v => setForm({...form, maxPlayersWeek3: +v})} />
+              <Field label="Week 4 Active Players" type="number" value={form.maxPlayersWeek4} onChange={v => setForm({...form, maxPlayersWeek4: +v})} />
               <Field label="Min Female per Week" type="number" value={form.minFemalePerWeek} onChange={v => setForm({...form, minFemalePerWeek: +v})} />
             </div>
           )}
           <p className="text-xs text-mm-text-muted mt-2">
             {form.useConstantRoster
-              ? `All weeks: ${form.maxPlayersWeek1} players active (min ${form.minFemalePerWeek} female).`
-              : `W1: ${form.maxPlayersWeek1} → W2: ${form.maxPlayersWeek2} → W3: ${form.maxPlayersWeek3} players (min ${form.minFemalePerWeek} female each week).`}
+              ? `All weeks: ${form.maxPlayersWeek1} players active daily (min ${form.minFemalePerWeek} female). 1 mandatory rest day per week.`
+              : `W1: ${form.maxPlayersWeek1} → W2: ${form.maxPlayersWeek2} → W3: ${form.maxPlayersWeek3} → W4: ${form.maxPlayersWeek4} players (min ${form.minFemalePerWeek} female). 1 rest day per week.`}
           </p>
         </Section>
 
         {/* Rest Day (info only) */}
         <Section title="Rest Day (auto-enforced)" icon="hotel">
           <div className="p-4 bg-mm-bg-primary rounded-lg border border-mm-border">
-            <p className="text-xs text-mm-text-muted">Cannot walk 7 consecutive days. If player does, 7th day is automatically treated as rest day (rejected). First 6 days count.</p>
+            <p className="text-xs text-mm-text-muted">1 mandatory rest day per calendar week. Weeks are defined from challenge start date in 7-day blocks (last week may be shorter). If a player walks every available day in a week, the last activity is rejected as rest day.</p>
           </div>
         </Section>
 
@@ -217,7 +220,7 @@ export default function ChallengePage() {
             <RuleRow rule={`Distance less than ${form.minDistancePerActivity / 1000} km`} action="rejected" />
             <RuleRow rule={`Average pace outside ${form.minPaceMinPerKm}–${form.maxPaceMinPerKm} min/km`} action="rejected" />
             <RuleRow rule="Player not in active roster for that week" action="rejected" />
-            <RuleRow rule="Rest day — walked 6 consecutive days (7th day)" action="rejected" />
+            <RuleRow rule="Rest day — 1 mandatory rest per week (walks all available days = last rejected)" action="rejected" />
             <RuleRow rule={`Daily cap exceeded (>${form.maxDailyKm} km) — partial credit applied`} action="accepted" />
             <RuleRow rule="Activity outside allowed time window (weekday 4-9AM/5-10PM, weekend 4AM-10PM)" action="flagged" />
             <RuleRow rule="Duplicate activity (already synced)" action="rejected" />

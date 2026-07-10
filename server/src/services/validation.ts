@@ -140,14 +140,46 @@ export async function validateActivity(
 
 /**
  * Check if a day should be treated as a rest day.
- * Rule: Cannot walk 7 consecutive days. 7th day = rest day.
+ * Rule: 1 mandatory rest day per calendar week.
+ * Week blocks are defined by challenge start date (7-day blocks, last week may be shorter).
+ * If a player has already walked every other day in the week, this day must be rest.
  */
 export async function isRestDay(playerId: string, date: Date): Promise<boolean> {
-  // Look back 6 days before this date
-  const consecutiveDays = [];
-  for (let i = 1; i <= 6; i++) {
-    const checkDate = new Date(date);
-    checkDate.setDate(checkDate.getDate() - i);
+  // Get challenge config to determine week boundaries
+  const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
+  if (!challenge) return false;
+
+  const challengeStart = new Date(challenge.startDate);
+  challengeStart.setHours(0, 0, 0, 0);
+  const challengeEnd = new Date(challenge.endDate);
+  challengeEnd.setHours(23, 59, 59, 999);
+
+  // Determine which week this date falls in
+  const daysSinceStart = Math.floor((date.getTime() - challengeStart.getTime()) / (1000 * 60 * 60 * 24));
+  const weekIndex = Math.floor(daysSinceStart / 7);
+
+  // Calculate this week's start and end
+  const weekStart = new Date(challengeStart);
+  weekStart.setDate(weekStart.getDate() + weekIndex * 7);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  // Cap week end at challenge end
+  const effectiveWeekEnd = weekEnd > challengeEnd ? challengeEnd : weekEnd;
+
+  // Count total days in this week
+  const totalDaysInWeek = Math.floor((effectiveWeekEnd.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const maxWalkDays = totalDaysInWeek - 1; // must rest 1 day
+
+  // Count how many days this player has already walked THIS week (excluding today)
+  const dateStr = date.toISOString().split('T')[0];
+  const daysWalkedThisWeek: Set<string> = new Set();
+
+  for (let i = 0; i < totalDaysInWeek; i++) {
+    const checkDate = new Date(weekStart);
+    checkDate.setDate(checkDate.getDate() + i);
+    const checkStr = checkDate.toISOString().split('T')[0];
+    if (checkStr === dateStr) continue; // skip today
+
     const dayStart = new Date(checkDate);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(checkDate);
@@ -161,15 +193,11 @@ export async function isRestDay(playerId: string, date: Date): Promise<boolean> 
       },
     });
 
-    if (count > 0) {
-      consecutiveDays.push(true);
-    } else {
-      break; // Gap found, not consecutive
-    }
+    if (count > 0) daysWalkedThisWeek.add(checkStr);
   }
 
-  // If 6 consecutive days before today have activities, today is the 7th = rest day
-  return consecutiveDays.length === 6;
+  // If player already used all their walking days, today must be rest
+  return daysWalkedThisWeek.size >= maxWalkDays;
 }
 
 /**
@@ -179,7 +207,7 @@ export function getWeekNumber(activityDate: Date, challengeStart: Date): number 
   const diffMs = activityDate.getTime() - challengeStart.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   const weekNum = Math.floor(diffDays / 7) + 1;
-  return Math.min(weekNum, 3); // Cap at week 3
+  return Math.min(weekNum, 4); // Cap at week 4
 }
 
 /**
