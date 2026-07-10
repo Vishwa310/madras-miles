@@ -215,7 +215,7 @@ export default function ChallengePage() {
           <tbody>
             <RuleRow rule="Manual entry (no GPS)" action="rejected" />
             <RuleRow rule="Activity type is not Walk" action="rejected" />
-            <RuleRow rule="No GPS polyline / start location" action="rejected" />
+            <RuleRow rule="No GPS polyline / start location (possible treadmill)" action="flagged" />
             <RuleRow rule="Activity outside challenge date window" action="rejected" />
             <RuleRow rule={`Distance less than ${form.minDistancePerActivity / 1000} km`} action="rejected" />
             <RuleRow rule={`Average pace outside ${form.minPaceMinPerKm}–${form.maxPaceMinPerKm} min/km`} action="rejected" />
