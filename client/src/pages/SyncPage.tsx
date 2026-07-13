@@ -31,24 +31,45 @@ export default function SyncPage() {
     setSyncProgress({ current: 0, total: 0, currentPlayer: '', done: false });
 
     try {
-      // Start sync log
       const { players } = await api.get('/sync/players');
-      const { syncLogId } = await api.post('/sync/start', {
-        type: 'all',
-        playerCount: players.length,
-        afterDate: syncAfter || null,
-      });
-      setSyncProgress({ current: 0, total: players.length, currentPlayer: '', done: false });
+
+      // Check for a running sync to resume
+      let syncLogId: string;
+      let skipPlayerIds: string[] = [];
+
+      const runningSyncLog = history.find((h: any) => h.status === 'running');
+      if (runningSyncLog) {
+        // Resume from checkpoint
+        const checkpoint = await api.get(`/sync/checkpoint/${runningSyncLog.id}`);
+        syncLogId = runningSyncLog.id;
+        skipPlayerIds = checkpoint.completedPlayerIds || [];
+      } else {
+        // New sync
+        const startRes = await api.post('/sync/start', {
+          type: 'all',
+          playerCount: players.length,
+          afterDate: syncAfter || null,
+        });
+        syncLogId = startRes.syncLogId;
+      }
+
+      const remainingPlayers = players.filter((p: any) => !skipPlayerIds.includes(p.playerId));
+      const alreadyDone = skipPlayerIds.length;
+      if (alreadyDone > 0) {
+        setSyncLog([{ player: `${alreadyDone} players`, status: 'done', reason: 'Resumed from checkpoint' }]);
+      }
+      setSyncProgress({ current: alreadyDone, total: players.length, currentPlayer: alreadyDone > 0 ? 'Resuming...' : '', done: false });
 
       let totalFetched = 0, totalAccepted = 0, totalRejected = 0, totalSkipped = 0;
-      let playersSynced = 0;
+      let playersSynced = alreadyDone;
 
-      for (let i = 0; i < players.length; i++) {
-        const p = players[i];
-        setSyncProgress({ current: i + 1, total: players.length, currentPlayer: p.name, done: false });
+      for (let i = 0; i < remainingPlayers.length; i++) {
+        const p = remainingPlayers[i];
+        setSyncProgress({ current: alreadyDone + i + 1, total: players.length, currentPlayer: p.name, done: false });
 
         if (!p.hasToken) {
           setSyncLog(prev => [...prev, { player: p.name, status: 'skipped', reason: 'No Strava token' }]);
+          await api.post(`/sync/checkpoint/${syncLogId}`, { playerId: p.playerId, playerName: p.name, result: 'skipped' }).catch(() => {});
           totalSkipped++;
           continue;
         }
@@ -65,6 +86,7 @@ export default function SyncPage() {
             flagged: result.flagged,
             reason: result.reason,
           }]);
+          await api.post(`/sync/checkpoint/${syncLogId}`, { playerId: p.playerId, playerName: p.name, result: 'done' }).catch(() => {});
           totalFetched += result.activities || 0;
           totalAccepted += result.accepted || 0;
           totalRejected += result.rejected || 0;
@@ -72,6 +94,7 @@ export default function SyncPage() {
           playersSynced++;
         } catch (err: any) {
           setSyncLog(prev => [...prev, { player: p.name, status: 'error', reason: err.message }]);
+          await api.post(`/sync/checkpoint/${syncLogId}`, { playerId: p.playerId, playerName: p.name, result: 'error' }).catch(() => {});
         }
       }
 

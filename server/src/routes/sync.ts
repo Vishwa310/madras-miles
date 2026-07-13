@@ -18,12 +18,68 @@ syncRouter.post('/start', authorize('ADMIN'), async (req: Request, res: Response
     const syncLog = await prisma.syncLog.create({
       data: {
         status: 'running',
-        params: { type: type || 'all', playerCount: playerCount || 0, afterDate: afterDate || null },
+        params: { type: type || 'all', playerCount: playerCount || 0, afterDate: afterDate || null, completedPlayers: [] },
       },
     });
     return res.json({ syncLogId: syncLog.id });
   } catch (err) {
     console.error('Error creating sync log:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/sync/checkpoint/:logId
+ * Update checkpoint — mark a player as completed in the running sync
+ * Admin only
+ */
+syncRouter.post('/checkpoint/:logId', authorize('ADMIN'), async (req: Request, res: Response) => {
+  const { playerId, playerName, result } = req.body;
+  try {
+    const log = await prisma.syncLog.findUnique({ where: { id: req.params.logId } });
+    if (!log) return res.status(404).json({ error: 'Sync log not found' });
+
+    const params = (log.params as any) || {};
+    const completedPlayers = params.completedPlayers || [];
+    completedPlayers.push({ playerId, playerName, result, at: new Date().toISOString() });
+
+    await prisma.syncLog.update({
+      where: { id: req.params.logId },
+      data: {
+        params: { ...params, completedPlayers },
+        playerssynced: completedPlayers.length,
+      },
+    });
+
+    return res.json({ checkpoint: completedPlayers.length });
+  } catch (err) {
+    console.error('Error updating checkpoint:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/sync/checkpoint/:logId
+ * Get the last checkpoint for a running sync — used for resume
+ * Admin only
+ */
+syncRouter.get('/checkpoint/:logId', authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const log = await prisma.syncLog.findUnique({ where: { id: req.params.logId } });
+    if (!log) return res.status(404).json({ error: 'Sync log not found' });
+
+    const params = (log.params as any) || {};
+    const completedPlayers = params.completedPlayers || [];
+    const completedIds = completedPlayers.map((p: any) => p.playerId);
+
+    return res.json({
+      syncLogId: log.id,
+      status: log.status,
+      completedCount: completedPlayers.length,
+      completedPlayerIds: completedIds,
+    });
+  } catch (err) {
+    console.error('Error getting checkpoint:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
