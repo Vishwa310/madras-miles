@@ -238,6 +238,36 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
       accepted -= fraudFlagged; // they were accepted, now flagged
     }
 
+    // Tier 2 auto split pace check — only for newly synced activities (not backlog)
+    let splitFlagged = 0;
+    const newAccepted = allActivities.length - skipped;
+    if (newAccepted > 0 && newAccepted <= 50) {
+      // Get newly accepted activities for this player
+      const { validateSplitPace } = await import('../services/validation');
+      const recentActivities = await prisma.activity.findMany({
+        where: { playerId: player.id, status: 'ACCEPTED', syncedAt: { gte: new Date(Date.now() - 60000) } },
+        select: { id: true, stravaActivityId: true },
+      });
+
+      for (const act of recentActivities) {
+        try {
+          const splitResult = await validateSplitPace(act.stravaActivityId, tokenResult.accessToken);
+          if (splitResult) {
+            await prisma.activity.update({
+              where: { id: act.id },
+              data: { status: 'FLAGGED', rejectionReason: splitResult },
+            });
+            splitFlagged++;
+            accepted--;
+          }
+          // Small delay to respect Strava rate limits
+          await new Promise(r => setTimeout(r, 500));
+        } catch {
+          // Skip split check on error — don't block sync
+        }
+      }
+    }
+
     return res.json({
       player: player.user.name,
       status: 'done',
@@ -245,7 +275,7 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
       accepted,
       rejected,
       skipped,
-      flagged: fraudFlagged,
+      flagged: fraudFlagged + splitFlagged,
     });
   } catch (err: any) {
     console.error('Single player sync error:', err);
