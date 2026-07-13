@@ -38,6 +38,12 @@ activitiesRouter.get('/', async (req: Request, res: Response) => {
       const dayEnd = new Date(day);
       dayEnd.setHours(23, 59, 59, 999);
       where.startDate = { gte: day, lte: dayEnd };
+    } else {
+      // Default: filter to active challenge date range
+      const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
+      if (challenge) {
+        where.startDate = { gte: challenge.startDate, lte: challenge.endDate };
+      }
     }
 
     const [activities, total] = await Promise.all([

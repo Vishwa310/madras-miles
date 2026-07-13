@@ -36,13 +36,17 @@ export async function computePlayerRankings(teamId?: string): Promise<PlayerRank
   const where: any = {};
   if (teamId) where.teamId = teamId;
 
+  // Get challenge date range
+  const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
+  const dateFilter = challenge ? { gte: challenge.startDate, lte: challenge.endDate } : undefined;
+
   const players = await prisma.player.findMany({
     where,
     include: {
       user: { select: { name: true, avatarUrl: true } },
       team: { select: { id: true, name: true, emblem: true } },
       activities: {
-        where: { status: 'ACCEPTED' },
+        where: { status: 'ACCEPTED', ...(dateFilter && { startDate: dateFilter }) },
         select: { distanceMeters: true, creditedMeters: true, startDate: true },
       },
       retiredIn: { select: { id: true } },
@@ -61,7 +65,7 @@ export async function computePlayerRankings(teamId?: string): Promise<PlayerRank
 
     // Count rejected activities
     const rejectedCount = await prisma.activity.count({
-      where: { playerId: player.id, status: 'REJECTED' },
+      where: { playerId: player.id, status: 'REJECTED', ...(dateFilter && { startDate: dateFilter }) },
     });
 
     rankings.push({
