@@ -64,11 +64,10 @@ export async function validateActivity(
     }
   }
 
-  // 8. Weekly active roster check
-  const weekNumber = getWeekNumber(activityDate, challenge.startDate);
-  const isActive = await isPlayerActiveThisWeek(player.id, weekNumber);
-  if (!isActive) {
-    return reject(`Player not in active roster for week ${weekNumber}`);
+  // 8. Player active status check
+  const currentPlayer = await prisma.player.findUnique({ where: { id: player.id }, select: { status: true } });
+  if (currentPlayer?.status !== 'ACTIVE') {
+    return reject(`Player is ${currentPlayer?.status || 'unknown'} — only active players' activities count`);
   }
 
   // 9. Rest day check — cannot walk 7 consecutive days

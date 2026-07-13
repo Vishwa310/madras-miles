@@ -82,7 +82,7 @@ syncRouter.post('/', authorize('ADMIN'), async (_req: Request, res: Response) =>
 syncRouter.get('/players', authorize('ADMIN'), async (_req: Request, res: Response) => {
   try {
     const players = await prisma.player.findMany({
-      where: { status: 'ACTIVE' },
+      where: {},  // Sync all players (active, standby, retired)
       include: {
         user: {
           select: { id: true, name: true, stravaAccessToken: true, stravaRefreshToken: true, tokenExpiresAt: true },
