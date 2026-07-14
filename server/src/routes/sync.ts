@@ -522,6 +522,7 @@ syncRouter.get('/auto', authorize('ADMIN'), async (_req: Request, res: Response)
     nextSyncAt: autoSync.nextSyncAt?.toISOString() || null,
     lastAutoSyncAt: autoSync.lastAutoSyncAt?.toISOString() || null,
     running: autoSync.running,
+    schedule: (autoSync as any).schedule || null,
   });
 });
 
@@ -530,21 +531,32 @@ syncRouter.get('/auto', authorize('ADMIN'), async (_req: Request, res: Response)
  * Update auto-sync config (enable/disable, set interval)
  */
 syncRouter.post('/auto', authorize('ADMIN'), async (req: Request, res: Response) => {
-  const { enabled, intervalHours } = req.body;
+  const { enabled, intervalHours, schedule } = req.body;
   const mod = await import('../index');
   const { autoSync } = mod;
 
   if (typeof enabled === 'boolean') autoSync.enabled = enabled;
   if (typeof intervalHours === 'number' && intervalHours >= 1) autoSync.intervalHours = intervalHours;
+  if (schedule) (autoSync as any).schedule = schedule;
 
-  // Re-import scheduleNextSync — it's exported from index
   if (autoSync.enabled) {
-    // Trigger schedule
     if (autoSync.timer) clearTimeout(autoSync.timer);
     const intervalMs = autoSync.intervalHours * 60 * 60 * 1000;
     autoSync.nextSyncAt = new Date(Date.now() + intervalMs);
     autoSync.timer = setTimeout(async () => {
       if (!autoSync.enabled || autoSync.running) return;
+
+      // For weekly schedule, check if today is a selected day
+      const sched = (autoSync as any).schedule;
+      if (sched?.frequency === 'weekly') {
+        const today = (new Date().getDay() + 6) % 7; // 0=Mon, 6=Sun
+        if (!sched.days.includes(today)) {
+          // Not a sync day, reschedule for next check (24h)
+          autoSync.nextSyncAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+          return;
+        }
+      }
+
       autoSync.running = true;
       try {
         await syncAllPlayers();
@@ -554,8 +566,8 @@ syncRouter.post('/auto', authorize('ADMIN'), async (req: Request, res: Response)
       }
       autoSync.running = false;
       // Reschedule
-      const innerMs = autoSync.intervalHours * 60 * 60 * 1000;
-      autoSync.nextSyncAt = new Date(Date.now() + innerMs);
+      const nextMs = autoSync.intervalHours * 60 * 60 * 1000;
+      autoSync.nextSyncAt = new Date(Date.now() + nextMs);
     }, intervalMs);
   } else {
     if (autoSync.timer) clearTimeout(autoSync.timer);
@@ -567,6 +579,7 @@ syncRouter.post('/auto', authorize('ADMIN'), async (req: Request, res: Response)
     enabled: autoSync.enabled,
     intervalHours: autoSync.intervalHours,
     nextSyncAt: autoSync.nextSyncAt?.toISOString() || null,
+    schedule: (autoSync as any).schedule || null,
   });
 });
 

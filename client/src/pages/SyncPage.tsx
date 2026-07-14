@@ -18,6 +18,9 @@ export default function SyncPage() {
   const [nextSyncAt, setNextSyncAt] = useState<string | null>(null);
   const [countdown, setCountdown] = useState('');
   const [autoRunning, setAutoRunning] = useState(false);
+  const [schedule, setSchedule] = useState<{ frequency: 'hourly' | 'daily' | 'alternate' | 'weekly'; intervalHours: number; syncTime: string; days: number[] }>({
+    frequency: 'hourly', intervalHours: 4, syncTime: '06:00', days: [0, 1, 2, 3, 4, 5, 6],
+  });
 
   useEffect(() => { loadData(); }, []);
 
@@ -49,19 +52,27 @@ export default function SyncPage() {
     setAutoInterval(autoData.intervalHours);
     setNextSyncAt(autoData.nextSyncAt);
     setAutoRunning(autoData.running);
+    if (autoData.schedule) setSchedule(autoData.schedule);
     setLoading(false);
   }
 
   async function toggleAutoSync(enabled: boolean) {
-    const result = await api.post('/sync/auto', { enabled, intervalHours: autoInterval });
+    const result = await api.post('/sync/auto', { enabled, intervalHours: autoInterval, schedule });
     setAutoEnabled(result.enabled);
     setNextSyncAt(result.nextSyncAt);
   }
 
-  async function updateInterval(hours: number) {
+  async function updateSchedule(newSchedule: typeof schedule) {
+    setSchedule(newSchedule);
+    // Convert schedule to interval hours for the backend
+    let hours = newSchedule.intervalHours;
+    if (newSchedule.frequency === 'daily') hours = 24;
+    else if (newSchedule.frequency === 'alternate') hours = 48;
+    else if (newSchedule.frequency === 'weekly') hours = 24; // checked daily, but only runs on selected days
     setAutoInterval(hours);
+
     if (autoEnabled) {
-      const result = await api.post('/sync/auto', { enabled: true, intervalHours: hours });
+      const result = await api.post('/sync/auto', { enabled: true, intervalHours: hours, schedule: newSchedule });
       setNextSyncAt(result.nextSyncAt);
     }
   }
@@ -187,7 +198,7 @@ export default function SyncPage() {
       <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-mm-text-muted flex items-center gap-2">
-            <span className="icon-sm text-mm-orange">schedule</span> Auto-Sync
+            <span className="icon-sm text-mm-orange">schedule</span> Auto-Sync Schedule
           </h3>
           <label className="flex items-center gap-3 cursor-pointer">
             <span className="text-xs text-mm-text-muted">{autoEnabled ? 'Active' : 'Off'}</span>
@@ -208,24 +219,99 @@ export default function SyncPage() {
               </div>
               {nextSyncAt && !autoRunning && (
                 <div className="text-xs text-mm-text-muted mt-2">
-                  {new Date(nextSyncAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  {new Date(nextSyncAt).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </div>
               )}
             </div>
 
-            {/* Interval picker */}
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-mm-text-muted">Sync every:</span>
-              <div className="flex gap-2">
-                {[1, 2, 4, 6, 8, 12].map(h => (
-                  <button key={h} onClick={() => updateInterval(h)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      autoInterval === h ? 'gradient-hero text-white' : 'bg-mm-bg-elevated border border-mm-border text-mm-text-secondary hover:text-white'
+            {/* Frequency */}
+            <div>
+              <span className="text-xs text-mm-text-muted uppercase tracking-wider">Frequency</span>
+              <div className="flex gap-2 mt-2">
+                {(['hourly', 'daily', 'alternate', 'weekly'] as const).map(f => (
+                  <button key={f} onClick={() => updateSchedule({ ...schedule, frequency: f })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition ${
+                      schedule.frequency === f ? 'gradient-hero text-white' : 'bg-mm-bg-elevated border border-mm-border text-mm-text-secondary hover:text-white'
                     }`}>
-                    {h}h
+                    {f}
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Hourly: pick interval */}
+            {schedule.frequency === 'hourly' && (
+              <div>
+                <span className="text-xs text-mm-text-muted uppercase tracking-wider">Every</span>
+                <div className="flex gap-2 mt-2">
+                  {[1, 2, 3, 4, 6, 8, 12].map(h => (
+                    <button key={h} onClick={() => updateSchedule({ ...schedule, intervalHours: h })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                        schedule.intervalHours === h ? 'gradient-hero text-white' : 'bg-mm-bg-elevated border border-mm-border text-mm-text-secondary hover:text-white'
+                      }`}>
+                      {h}h
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Daily/Alternate: pick time */}
+            {(schedule.frequency === 'daily' || schedule.frequency === 'alternate') && (
+              <div>
+                <span className="text-xs text-mm-text-muted uppercase tracking-wider">Sync at</span>
+                <div className="flex gap-2 mt-2">
+                  {['06:00', '08:00', '10:00', '12:00', '18:00', '21:00'].map(t => (
+                    <button key={t} onClick={() => updateSchedule({ ...schedule, syncTime: t })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                        schedule.syncTime === t ? 'gradient-hero text-white' : 'bg-mm-bg-elevated border border-mm-border text-mm-text-secondary hover:text-white'
+                      }`}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Weekly: pick days */}
+            {schedule.frequency === 'weekly' && (
+              <div>
+                <span className="text-xs text-mm-text-muted uppercase tracking-wider">Days</span>
+                <div className="flex gap-2 mt-2">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
+                    <button key={d} onClick={() => {
+                      const days = schedule.days.includes(i) ? schedule.days.filter(x => x !== i) : [...schedule.days, i];
+                      updateSchedule({ ...schedule, days });
+                    }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                        schedule.days.includes(i) ? 'gradient-hero text-white' : 'bg-mm-bg-elevated border border-mm-border text-mm-text-secondary hover:text-white'
+                      }`}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2">
+                  <span className="text-xs text-mm-text-muted uppercase tracking-wider">At</span>
+                  <div className="flex gap-2 mt-2">
+                    {['06:00', '08:00', '10:00', '18:00', '21:00'].map(t => (
+                      <button key={t} onClick={() => updateSchedule({ ...schedule, syncTime: t })}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                          schedule.syncTime === t ? 'gradient-hero text-white' : 'bg-mm-bg-elevated border border-mm-border text-mm-text-secondary hover:text-white'
+                        }`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Summary */}
+            <div className="p-3 bg-mm-bg-primary rounded-lg border border-mm-border text-xs text-mm-text-secondary">
+              📋 {schedule.frequency === 'hourly' && `Syncing every ${schedule.intervalHours} hour(s)`}
+              {schedule.frequency === 'daily' && `Syncing daily at ${schedule.syncTime}`}
+              {schedule.frequency === 'alternate' && `Syncing every other day at ${schedule.syncTime}`}
+              {schedule.frequency === 'weekly' && `Syncing on ${schedule.days.map(d => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]).join(', ')} at ${schedule.syncTime}`}
             </div>
           </div>
         )}
