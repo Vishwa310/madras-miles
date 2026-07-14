@@ -341,13 +341,16 @@ playersRouter.delete('/:id', authorize('ADMIN'), async (req: Request, res: Respo
       return res.status(404).json({ error: 'Player not found' });
     }
 
+    // Delete activities first, then player
     if (player._count.activities > 0) {
-      return res.status(400).json({
-        error: 'Cannot delete player with synced activities. Consider retiring instead.',
-      });
+      await prisma.activity.deleteMany({ where: { playerId: req.params.id } });
     }
 
     await prisma.player.delete({ where: { id: req.params.id } });
+
+    // Audit
+    const user = await prisma.user.findUnique({ where: { id: player.userId }, select: { name: true } });
+    await logAudit(player.teamId, 'unassigned', user?.name || 'Unknown', 'Removed from team (unassigned)', req.user!.userId);
 
     return res.json({ message: 'Player removed' });
   } catch (err) {

@@ -260,12 +260,18 @@ export default function PlayersOpsPage() {
   // Change team
   async function changeTeam() {
     if (!teamChangeModal || !newTeamId) return;
-    await api.put(`/players/${teamChangeModal.id}`, { teamId: newTeamId });
+    if (newTeamId === '__unassign__') {
+      if (!confirm('This will remove the player from their team. Their activities will be deleted. Continue?')) return;
+      await api.delete(`/players/${teamChangeModal.id}`);
+    } else {
+      await api.put(`/players/${teamChangeModal.id}`, { teamId: newTeamId });
+    }
     setTeamChangeModal(null);
     setNewTeamId('');
-    // Only refresh players list
-    const [pData, tData] = await Promise.all([api.get('/players'), api.get('/teams')]);
+    // Refresh
+    const [pData, tData, unData] = await Promise.all([api.get('/players'), api.get('/teams'), api.get('/players/unassigned')]);
     setPlayers(pData.players);
+    setUnassigned(unData.users || []);
     setTeamGroups(tData.teams.map((t: any) => ({
       teamId: t.id,
       teamName: t.name,
@@ -656,10 +662,11 @@ export default function PlayersOpsPage() {
               </div>
             </div>
             <div>
-              <label className="text-[0.6rem] text-mm-text-muted uppercase">Move to team *</label>
+              <label className="text-[0.6rem] text-mm-text-muted uppercase">Move to team</label>
               <select value={newTeamId} onChange={e => setNewTeamId(e.target.value)}
                 className="w-full mt-1 px-3 py-2.5 bg-mm-bg-primary border border-mm-border rounded-lg text-sm focus:border-mm-orange outline-none">
                 <option value="">Select team</option>
+                <option value="__unassign__" className="text-mm-hot">⊘ Unassign (remove from team)</option>
                 {teams.filter(t => t.id !== teamChangeModal.teamId).map(t => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -667,8 +674,9 @@ export default function PlayersOpsPage() {
             </div>
             <div className="flex justify-end mt-5 pt-4 border-t border-mm-border">
               <button onClick={changeTeam} disabled={!newTeamId}
-                className="flex items-center gap-2 px-5 py-2 gradient-hero rounded-lg text-xs font-semibold text-white transition disabled:opacity-50">
-                <span className="icon-sm">move_up</span> Reassign
+                className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold text-white transition disabled:opacity-50 ${newTeamId === '__unassign__' ? 'bg-mm-hot' : 'gradient-hero'}`}>
+                <span className="icon-sm">{newTeamId === '__unassign__' ? 'person_remove' : 'move_up'}</span>
+                {newTeamId === '__unassign__' ? 'Unassign' : 'Reassign'}
               </button>
             </div>
           </div>
