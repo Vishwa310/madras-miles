@@ -511,6 +511,66 @@ syncRouter.post('/split-pace/:activityId', authorize('ADMIN'), async (req: Reque
 });
 
 /**
+ * GET /api/sync/auto
+ * Get auto-sync state (enabled, interval, next sync time)
+ */
+syncRouter.get('/auto', authorize('ADMIN'), async (_req: Request, res: Response) => {
+  const { autoSync } = await import('../index');
+  return res.json({
+    enabled: autoSync.enabled,
+    intervalHours: autoSync.intervalHours,
+    nextSyncAt: autoSync.nextSyncAt?.toISOString() || null,
+    lastAutoSyncAt: autoSync.lastAutoSyncAt?.toISOString() || null,
+    running: autoSync.running,
+  });
+});
+
+/**
+ * POST /api/sync/auto
+ * Update auto-sync config (enable/disable, set interval)
+ */
+syncRouter.post('/auto', authorize('ADMIN'), async (req: Request, res: Response) => {
+  const { enabled, intervalHours } = req.body;
+  const mod = await import('../index');
+  const { autoSync } = mod;
+
+  if (typeof enabled === 'boolean') autoSync.enabled = enabled;
+  if (typeof intervalHours === 'number' && intervalHours >= 1) autoSync.intervalHours = intervalHours;
+
+  // Re-import scheduleNextSync — it's exported from index
+  if (autoSync.enabled) {
+    // Trigger schedule
+    if (autoSync.timer) clearTimeout(autoSync.timer);
+    const intervalMs = autoSync.intervalHours * 60 * 60 * 1000;
+    autoSync.nextSyncAt = new Date(Date.now() + intervalMs);
+    autoSync.timer = setTimeout(async () => {
+      if (!autoSync.enabled || autoSync.running) return;
+      autoSync.running = true;
+      try {
+        await syncAllPlayers();
+        autoSync.lastAutoSyncAt = new Date();
+      } catch (err: any) {
+        console.error('[Auto-Sync] Failed:', err.message);
+      }
+      autoSync.running = false;
+      // Reschedule
+      const innerMs = autoSync.intervalHours * 60 * 60 * 1000;
+      autoSync.nextSyncAt = new Date(Date.now() + innerMs);
+    }, intervalMs);
+  } else {
+    if (autoSync.timer) clearTimeout(autoSync.timer);
+    autoSync.timer = null;
+    autoSync.nextSyncAt = null;
+  }
+
+  return res.json({
+    enabled: autoSync.enabled,
+    intervalHours: autoSync.intervalHours,
+    nextSyncAt: autoSync.nextSyncAt?.toISOString() || null,
+  });
+});
+
+/**
  * GET /api/sync/status
  * Get the latest sync status
  */

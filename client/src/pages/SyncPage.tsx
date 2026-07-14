@@ -12,16 +12,58 @@ export default function SyncPage() {
   const [syncSummary, setSyncSummary] = useState<{ totalFetched: number; totalAccepted: number; totalRejected: number; totalSkipped: number } | null>(null);
   const [challenge, setChallenge] = useState<any>(null);
 
+  // Auto-sync state
+  const [autoEnabled, setAutoEnabled] = useState(false);
+  const [autoInterval, setAutoInterval] = useState(4);
+  const [nextSyncAt, setNextSyncAt] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState('');
+  const [autoRunning, setAutoRunning] = useState(false);
+
   useEffect(() => { loadData(); }, []);
 
+  // Countdown timer
+  useEffect(() => {
+    if (!nextSyncAt) { setCountdown(''); return; }
+    const tick = () => {
+      const diff = new Date(nextSyncAt).getTime() - Date.now();
+      if (diff <= 0) { setCountdown('Syncing now...'); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setCountdown(`${h}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [nextSyncAt]);
+
   async function loadData() {
-    const [historyData, chalData] = await Promise.all([
+    const [historyData, chalData, autoData] = await Promise.all([
       api.get('/sync/history'),
       api.get('/challenge'),
+      api.get('/sync/auto'),
     ]);
     setHistory(historyData.history || []);
     setChallenge(chalData.config);
+    setAutoEnabled(autoData.enabled);
+    setAutoInterval(autoData.intervalHours);
+    setNextSyncAt(autoData.nextSyncAt);
+    setAutoRunning(autoData.running);
     setLoading(false);
+  }
+
+  async function toggleAutoSync(enabled: boolean) {
+    const result = await api.post('/sync/auto', { enabled, intervalHours: autoInterval });
+    setAutoEnabled(result.enabled);
+    setNextSyncAt(result.nextSyncAt);
+  }
+
+  async function updateInterval(hours: number) {
+    setAutoInterval(hours);
+    if (autoEnabled) {
+      const result = await api.post('/sync/auto', { enabled: true, intervalHours: hours });
+      setNextSyncAt(result.nextSyncAt);
+    }
   }
 
   async function triggerSync() {
@@ -139,6 +181,58 @@ export default function SyncPage() {
             {syncing ? 'Syncing...' : 'Sync Now'}
           </button>
         </div>
+      </div>
+
+      {/* Auto-Sync */}
+      <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-mm-text-muted flex items-center gap-2">
+            <span className="icon-sm text-mm-orange">schedule</span> Auto-Sync
+          </h3>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <span className="text-xs text-mm-text-muted">{autoEnabled ? 'Active' : 'Off'}</span>
+            <div className="relative" onClick={() => toggleAutoSync(!autoEnabled)}>
+              <div className={`w-11 h-6 rounded-full transition-colors ${autoEnabled ? 'bg-mm-teal' : 'bg-mm-bg-elevated'}`} />
+              <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${autoEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+            </div>
+          </label>
+        </div>
+
+        {autoEnabled && (
+          <div className="space-y-4">
+            {/* Countdown */}
+            <div className="text-center py-4 bg-mm-bg-primary rounded-xl border border-mm-border">
+              <div className="text-xs text-mm-text-muted uppercase tracking-wider mb-2">Next sync in</div>
+              <div className="font-display text-3xl font-bold text-mm-orange">
+                {autoRunning ? '🔄 Syncing...' : countdown || '—'}
+              </div>
+              {nextSyncAt && !autoRunning && (
+                <div className="text-xs text-mm-text-muted mt-2">
+                  {new Date(nextSyncAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </div>
+              )}
+            </div>
+
+            {/* Interval picker */}
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-mm-text-muted">Sync every:</span>
+              <div className="flex gap-2">
+                {[1, 2, 4, 6, 8, 12].map(h => (
+                  <button key={h} onClick={() => updateInterval(h)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                      autoInterval === h ? 'gradient-hero text-white' : 'bg-mm-bg-elevated border border-mm-border text-mm-text-secondary hover:text-white'
+                    }`}>
+                    {h}h
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!autoEnabled && (
+          <p className="text-xs text-mm-text-muted">Enable to automatically sync all players on a schedule. Activities will be fetched, validated, and scored without manual intervention.</p>
+        )}
       </div>
 
       {/* Sync history */}

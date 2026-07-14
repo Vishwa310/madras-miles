@@ -60,6 +60,55 @@ app.listen(config.port, () => {
   console.log(`   Environment: ${config.nodeEnv}`);
 });
 
+// ============================================
+// AUTO-SYNC MANAGER
+// ============================================
+interface AutoSyncState {
+  enabled: boolean;
+  intervalHours: number;
+  nextSyncAt: Date | null;
+  lastAutoSyncAt: Date | null;
+  timer: ReturnType<typeof setTimeout> | null;
+  running: boolean;
+}
+
+export const autoSync: AutoSyncState = {
+  enabled: false,
+  intervalHours: 4,
+  nextSyncAt: null,
+  lastAutoSyncAt: null,
+  timer: null,
+  running: false,
+};
+
+function scheduleNextSync() {
+  if (autoSync.timer) clearTimeout(autoSync.timer);
+  if (!autoSync.enabled) { autoSync.nextSyncAt = null; return; }
+
+  const intervalMs = autoSync.intervalHours * 60 * 60 * 1000;
+  autoSync.nextSyncAt = new Date(Date.now() + intervalMs);
+
+  autoSync.timer = setTimeout(async () => {
+    if (!autoSync.enabled || autoSync.running) return;
+    autoSync.running = true;
+    console.log(`🔄 [Auto-Sync] Starting scheduled sync...`);
+
+    try {
+      const { syncAllPlayers } = await import('./services/sync');
+      await syncAllPlayers();
+      autoSync.lastAutoSyncAt = new Date();
+      console.log(`✅ [Auto-Sync] Completed at ${autoSync.lastAutoSyncAt.toISOString()}`);
+    } catch (err: any) {
+      console.error(`❌ [Auto-Sync] Failed:`, err.message);
+    }
+
+    autoSync.running = false;
+    scheduleNextSync(); // Schedule next one
+  }, intervalMs);
+
+  console.log(`⏰ [Auto-Sync] Next sync at ${autoSync.nextSyncAt.toISOString()} (in ${autoSync.intervalHours}h)`);
+}
+
 // Global error handler — prevents server crash
 app.use((err: any, _req: any, res: any, _next: any) => {
   console.error('❌ Unhandled error:', err.message || err);
