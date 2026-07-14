@@ -365,3 +365,59 @@ export async function validateSplitPace(
     return null; // On error, don't block — allow through
   }
 }
+
+/**
+ * Fetch split pace data and validate — returns both the splits array and any flag reason.
+ * Stores splits for later viewing without re-calling Strava.
+ */
+export async function fetchAndValidateSplits(
+  stravaActivityId: string,
+  accessToken: string,
+  minPace: number = 9,
+  maxPace: number = 16
+): Promise<{ splits: { km: number; pace: number; status: string }[]; flagReason: string | null }> {
+  try {
+    const response = await fetch(
+      `https://www.strava.com/api/v3/activities/${stravaActivityId}/streams?keys=distance,time&key_by_type=true`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (!response.ok) return { splits: [], flagReason: null };
+
+    const streams = await response.json() as any;
+    const distanceData = streams.distance?.data;
+    const timeData = streams.time?.data;
+
+    if (!distanceData || !timeData || distanceData.length === 0) {
+      return { splits: [], flagReason: null };
+    }
+
+    const splits: { km: number; pace: number; status: string }[] = [];
+    let lastKmDistance = 0;
+    let lastKmTime = 0;
+    let kmCount = 0;
+    let flagReason: string | null = null;
+
+    for (let i = 0; i < distanceData.length; i++) {
+      if (distanceData[i] - lastKmDistance >= 1000) {
+        kmCount++;
+        const splitDist = distanceData[i] - lastKmDistance;
+        const splitTime = timeData[i] - lastKmTime;
+        const pace = parseFloat(((splitTime / 60) / (splitDist / 1000)).toFixed(1));
+
+        let status = 'ok';
+        if (pace < minPace) { status = 'fast'; if (!flagReason) flagReason = `Km ${kmCount}: ${pace} min/km (too fast)`; }
+        else if (pace > maxPace) { status = 'slow'; if (!flagReason) flagReason = `Km ${kmCount}: ${pace} min/km (too slow)`; }
+
+        splits.push({ km: kmCount, pace, status });
+        lastKmDistance = distanceData[i];
+        lastKmTime = timeData[i];
+      }
+    }
+
+    return { splits, flagReason };
+  } catch (err) {
+    console.error('Error fetching splits:', err);
+    return { splits: [], flagReason: null };
+  }
+}

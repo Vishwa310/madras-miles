@@ -299,7 +299,7 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
     const newAccepted = allActivities.length - skipped;
     if (newAccepted > 0 && newAccepted <= 50) {
       // Get newly accepted activities for this player
-      const { validateSplitPace } = await import('../services/validation');
+      const { fetchAndValidateSplits } = await import('../services/validation');
       const recentActivities = await prisma.activity.findMany({
         where: { playerId: player.id, status: 'ACCEPTED', syncedAt: { gte: new Date(Date.now() - 60000) } },
         select: { id: true, stravaActivityId: true },
@@ -307,14 +307,15 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
 
       for (const act of recentActivities) {
         try {
-          const splitResult = await validateSplitPace(act.stravaActivityId, tokenResult.accessToken);
-          if (splitResult) {
-            await prisma.activity.update({
-              where: { id: act.id },
-              data: { flagReason: splitResult },
-            });
-            splitFlagged++;
-          }
+          const { splits, flagReason: splitFlag } = await fetchAndValidateSplits(act.stravaActivityId, tokenResult.accessToken);
+          await prisma.activity.update({
+            where: { id: act.id },
+            data: {
+              splitData: splits.length > 0 ? splits : undefined,
+              ...(splitFlag && { flagReason: splitFlag }),
+            },
+          });
+          if (splitFlag) splitFlagged++;
           // Small delay to respect Strava rate limits
           await new Promise(r => setTimeout(r, 500));
         } catch {
@@ -406,60 +407,40 @@ syncRouter.post('/split-pace/:activityId/analyze', authorize('ADMIN'), async (re
     const activity = await prisma.activity.findUnique({ where: { id: req.params.activityId } });
     if (!activity) return res.status(404).json({ error: 'Activity not found' });
 
-    const response = await fetch(
-      `https://www.strava.com/api/v3/activities/${activity.stravaActivityId}/streams?keys=distance,time&key_by_type=true`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-
-    if (!response.ok) {
-      return res.json({ status: 'error', reason: 'Could not fetch Strava streams', splits: [] });
+    // Check if we already have split data stored
+    if (activity.splitData && (activity.splitData as any[]).length > 0) {
+      const splits = activity.splitData as { km: number; pace: number; status: string }[];
+      const hasFailed = splits.some(s => s.status !== 'ok');
+      return res.json({
+        status: hasFailed ? 'flagged' : 'clean',
+        splits,
+        reason: hasFailed ? activity.flagReason || 'Split pace violation' : 'All splits OK',
+        cached: true,
+      });
     }
 
-    const streams = await response.json() as any;
-    const distanceData = streams.distance?.data;
-    const timeData = streams.time?.data;
-
-    if (!distanceData || !timeData || distanceData.length === 0) {
-      return res.json({ status: 'no_data', reason: 'No stream data available', splits: [] });
-    }
-
+    // Fetch from Strava and store
+    const { fetchAndValidateSplits } = await import('../services/validation');
     const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
     const minPace = challenge?.minPaceMinPerKm || 9;
     const maxPace = challenge?.maxPaceMinPerKm || 16;
 
-    const splits: { km: number; pace: number; status: string }[] = [];
-    let lastKmDistance = 0;
-    let lastKmTime = 0;
-    let kmCount = 0;
-    let hasFailed = false;
-    let failReason = '';
+    const { splits, flagReason } = await fetchAndValidateSplits(activity.stravaActivityId, accessToken, minPace, maxPace);
 
-    for (let i = 0; i < distanceData.length; i++) {
-      if (distanceData[i] - lastKmDistance >= 1000) {
-        kmCount++;
-        const splitDist = distanceData[i] - lastKmDistance;
-        const splitTime = timeData[i] - lastKmTime;
-        const pace = (splitTime / 60) / (splitDist / 1000);
-
-        let status = 'ok';
-        if (pace < minPace) { status = 'fast'; hasFailed = true; failReason = `Km ${kmCount}: ${pace.toFixed(1)} min/km (too fast)`; }
-        else if (pace > maxPace) { status = 'slow'; hasFailed = true; failReason = `Km ${kmCount}: ${pace.toFixed(1)} min/km (too slow)`; }
-
-        splits.push({ km: kmCount, pace: parseFloat(pace.toFixed(1)), status });
-        lastKmDistance = distanceData[i];
-        lastKmTime = timeData[i];
-      }
+    if (splits.length === 0) {
+      return res.json({ status: 'no_data', reason: 'No stream data available', splits: [] });
     }
 
-    // Flag if failed
-    if (hasFailed) {
-      await prisma.activity.update({
-        where: { id: activity.id },
-        data: { flagReason: failReason },
-      });
-    }
+    // Store splits + flag if needed
+    await prisma.activity.update({
+      where: { id: activity.id },
+      data: {
+        splitData: splits,
+        ...(flagReason && { flagReason }),
+      },
+    });
 
-    return res.json({ status: hasFailed ? 'flagged' : 'clean', splits, reason: hasFailed ? failReason : 'All splits OK' });
+    return res.json({ status: flagReason ? 'flagged' : 'clean', splits, reason: flagReason || 'All splits OK', cached: false });
   } catch (err: any) {
     console.error('Split analyze error:', err);
     return res.json({ status: 'error', reason: err.message, splits: [] });
