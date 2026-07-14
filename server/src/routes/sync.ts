@@ -541,22 +541,14 @@ syncRouter.post('/auto', authorize('ADMIN'), async (req: Request, res: Response)
 
   if (autoSync.enabled) {
     if (autoSync.timer) clearTimeout(autoSync.timer);
-    const intervalMs = autoSync.intervalHours * 60 * 60 * 1000;
-    autoSync.nextSyncAt = new Date(Date.now() + intervalMs);
+
+    const sched = (autoSync as any).schedule || schedule;
+    const nextTime = calculateNextSyncTime(sched, autoSync.intervalHours);
+    autoSync.nextSyncAt = nextTime;
+
+    const delayMs = nextTime.getTime() - Date.now();
     autoSync.timer = setTimeout(async () => {
       if (!autoSync.enabled || autoSync.running) return;
-
-      // For weekly schedule, check if today is a selected day
-      const sched = (autoSync as any).schedule;
-      if (sched?.frequency === 'weekly') {
-        const today = (new Date().getDay() + 6) % 7; // 0=Mon, 6=Sun
-        if (!sched.days.includes(today)) {
-          // Not a sync day, reschedule for next check (24h)
-          autoSync.nextSyncAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-          return;
-        }
-      }
-
       autoSync.running = true;
       try {
         await syncAllPlayers();
@@ -565,10 +557,12 @@ syncRouter.post('/auto', authorize('ADMIN'), async (req: Request, res: Response)
         console.error('[Auto-Sync] Failed:', err.message);
       }
       autoSync.running = false;
-      // Reschedule
-      const nextMs = autoSync.intervalHours * 60 * 60 * 1000;
-      autoSync.nextSyncAt = new Date(Date.now() + nextMs);
-    }, intervalMs);
+      // Reschedule next
+      const s = (autoSync as any).schedule;
+      autoSync.nextSyncAt = calculateNextSyncTime(s, autoSync.intervalHours);
+      const nextDelay = autoSync.nextSyncAt.getTime() - Date.now();
+      autoSync.timer = setTimeout(arguments.callee as any, nextDelay);
+    }, delayMs);
   } else {
     if (autoSync.timer) clearTimeout(autoSync.timer);
     autoSync.timer = null;
@@ -582,6 +576,56 @@ syncRouter.post('/auto', authorize('ADMIN'), async (req: Request, res: Response)
     schedule: (autoSync as any).schedule || null,
   });
 });
+
+/**
+ * Calculate the next valid sync time based on schedule
+ */
+function calculateNextSyncTime(schedule: any, intervalHours: number): Date {
+  const now = new Date();
+
+  if (!schedule || schedule.frequency === 'hourly') {
+    return new Date(now.getTime() + intervalHours * 60 * 60 * 1000);
+  }
+
+  const [targetH, targetM] = (schedule.syncTime || '06:00').split(':').map(Number);
+
+  if (schedule.frequency === 'daily') {
+    const next = new Date(now);
+    next.setHours(targetH, targetM, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    return next;
+  }
+
+  if (schedule.frequency === 'alternate') {
+    const next = new Date(now);
+    next.setHours(targetH, targetM, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 2);
+    else next.setDate(next.getDate() + 1); // next day at minimum for alternate
+    return next;
+  }
+
+  if (schedule.frequency === 'weekly') {
+    const days: number[] = schedule.days || [];
+    if (days.length === 0) return new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    // Days are 0=Mon...6=Sun, JS getDay is 0=Sun...6=Sat
+    // Convert: JS day to our format: (jsDay + 6) % 7
+    for (let offset = 0; offset < 8; offset++) {
+      const candidate = new Date(now);
+      candidate.setDate(candidate.getDate() + offset);
+      candidate.setHours(targetH, targetM, 0, 0);
+      const ourDay = (candidate.getDay() + 6) % 7; // 0=Mon...6=Sun
+
+      if (days.includes(ourDay) && candidate > now) {
+        return candidate;
+      }
+    }
+    // Fallback: next week
+    return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  }
+
+  return new Date(now.getTime() + intervalHours * 60 * 60 * 1000);
+}
 
 /**
  * GET /api/sync/status
