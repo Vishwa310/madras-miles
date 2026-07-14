@@ -279,6 +279,7 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
           manual: rawActivity.manual || false,
           status: validation.status,
           rejectionReason: validation.reason || null,
+          flagReason: validation.flagReason || null,
         },
       });
 
@@ -291,7 +292,6 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
     const fraudResults = await runFraudDetection(player.id, new Date(Date.now() - 60000)); // check activities saved in last minute
     const fraudFlagged = fraudResults.length;
     if (fraudFlagged > 0) {
-      accepted -= fraudFlagged; // they were accepted, now flagged
     }
 
     // Tier 2 auto split pace check — only for newly synced activities (not backlog)
@@ -311,10 +311,9 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
           if (splitResult) {
             await prisma.activity.update({
               where: { id: act.id },
-              data: { status: 'FLAGGED', rejectionReason: splitResult },
+              data: { flagReason: splitResult },
             });
             splitFlagged++;
-            accepted--;
           }
           // Small delay to respect Strava rate limits
           await new Promise(r => setTimeout(r, 500));
@@ -456,7 +455,7 @@ syncRouter.post('/split-pace/:activityId/analyze', authorize('ADMIN'), async (re
     if (hasFailed) {
       await prisma.activity.update({
         where: { id: activity.id },
-        data: { status: 'FLAGGED', rejectionReason: failReason },
+        data: { flagReason: failReason },
       });
     }
 
@@ -518,7 +517,7 @@ syncRouter.post('/split-pace/:activityId', authorize('ADMIN'), async (req: Reque
       // Flag the activity
       await prisma.activity.update({
         where: { id: activity.id },
-        data: { status: 'FLAGGED', rejectionReason: result },
+        data: { flagReason: result },
       });
       return res.json({ status: 'flagged', reason: result });
     }

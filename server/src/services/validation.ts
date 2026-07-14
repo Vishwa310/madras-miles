@@ -4,6 +4,7 @@ import { ActivityStatus } from '@prisma/client';
 export interface ValidationResult {
   status: ActivityStatus;
   reason: string | null;
+  flagReason?: string | null; // Soft flag — activity is ACCEPTED but flagged for admin review
   cappedDistanceMeters?: number; // If daily cap applies, this is the credited distance
 }
 
@@ -26,14 +27,15 @@ export async function validateActivity(
     return reject(`Only Walk activities allowed (got '${rawActivity.type}')`);
   }
 
-  // 3. GPS polyline check — flag for review (treadmill possible)
+  // 3. GPS polyline check — soft flag for review (treadmill possible)
+  let flagReason: string | null = null;
   if (!rawActivity.map?.summary_polyline) {
-    return { status: 'FLAGGED', reason: 'No GPS route data — possible treadmill activity' };
+    flagReason = 'No GPS route data — possible treadmill activity';
   }
 
-  // 4. GPS start location check — flag for review
-  if (!rawActivity.start_latlng || rawActivity.start_latlng.length === 0) {
-    return { status: 'FLAGGED', reason: 'No GPS start location — needs manual review' };
+  // 4. GPS start location check — soft flag for review
+  if (!flagReason && (!rawActivity.start_latlng || rawActivity.start_latlng.length === 0)) {
+    flagReason = 'No GPS start location — needs manual review';
   }
 
   // 5. Challenge date window check
@@ -131,10 +133,10 @@ export async function validateActivity(
   }
 
   if (outsideWindow) {
-    return { status: 'FLAGGED', reason: `Activity at ${actHour}:00 is outside allowed time window` };
+    flagReason = flagReason || `Activity at ${actHour}:00 is outside allowed time window`;
   }
 
-  return accept();
+  return { status: 'ACCEPTED', reason: null, flagReason };
 }
 
 /**

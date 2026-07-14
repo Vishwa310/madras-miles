@@ -155,6 +155,7 @@ model Activity {
   manual              Boolean        @default(false)
   status              ActivityStatus @default(ACCEPTED)
   rejectionReason     String?        @map("rejection_reason")
+  flagReason          String?        @map("flag_reason")  // Soft flag — activity stays ACCEPTED but admin sees alert
   syncedAt            DateTime       @default(now()) @map("synced_at")
   createdAt           DateTime       @default(now()) @map("created_at")
 

@@ -84,7 +84,7 @@ export default function AdminDashboard() {
   // Computed stats
   const totalPlayers = teams.reduce((s, t) => s + t.playerCount, 0);
   const acceptedActs = activities.filter(a => a.status === 'ACCEPTED');
-  const flaggedActs = activities.filter(a => a.status === 'FLAGGED');
+  const flaggedActs = activities.filter(a => a.flagReason);
   const rejectedActs = activities.filter(a => a.status === 'REJECTED');
   const totalKm = playerRankings.reduce((s, p) => s + (p.totalKm || 0), 0);
 

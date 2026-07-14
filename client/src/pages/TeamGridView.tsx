@@ -221,9 +221,12 @@ export default function TeamGridView() {
                             className="w-full flex flex-col gap-0.5 items-center transition hover:scale-105"
                           >
                             {cell.activities.map((act: any, idx: number) => {
-                              const matchesFilter = !statusFilter || act.status === statusFilter.toUpperCase();
+                              const matchesFilter = !statusFilter ||
+                                (statusFilter === 'flagged' ? !!act.flagReason : act.status === statusFilter.toUpperCase());
+                              const isFlagged = act.status === 'ACCEPTED' && act.flagReason;
                               return (
-                                <div key={idx} className={`w-full rounded-sm px-0.5 py-0.5 text-[0.55rem] font-display font-bold leading-tight ${
+                                <div key={idx} className={`w-full rounded-sm px-0.5 py-0.5 text-[0.55rem] font-display font-bold leading-tight relative ${
+                                  isFlagged ? 'bg-mm-gold/15 text-mm-teal border border-mm-gold/40' :
                                   act.status === 'ACCEPTED' ? 'bg-mm-teal/15 text-mm-teal border border-mm-teal/30' :
                                   act.status === 'REJECTED' ? 'bg-mm-hot/15 text-mm-hot border border-mm-hot/30' :
                                   'bg-mm-gold/15 text-mm-gold border border-mm-gold/30'

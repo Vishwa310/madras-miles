@@ -71,13 +71,12 @@ export async function runFraudDetection(playerId: string, afterDate?: Date): Pro
     }
   }
 
-  // Apply flags to DB
+  // Apply soft flags to DB — status stays ACCEPTED, flagReason set for admin
   for (const flag of flagged) {
     await prisma.activity.update({
       where: { id: flag.activityId },
       data: {
-        status: 'FLAGGED',
-        rejectionReason: flag.reason,
+        flagReason: flag.reason,
       },
     });
   }
