@@ -277,6 +277,8 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
           startLatlng: rawActivity.start_latlng ? rawActivity.start_latlng.join(',') : null,
           hasPolyline: !!rawActivity.map?.summary_polyline,
           manual: rawActivity.manual || false,
+          externalId: rawActivity.external_id || null,
+          deviceName: rawActivity.device_name || null,
           status: validation.status,
           rejectionReason: validation.reason || null,
           flagReason: validation.flagReason || null,

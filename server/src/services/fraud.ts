@@ -26,6 +26,28 @@ export async function runFraudDetection(playerId: string, afterDate?: Date): Pro
   const flagged: FraudResult[] = [];
 
   for (const act of activities) {
+    // Check 0: File upload / edited activity detection
+    const extId = ((act as any).externalId || '').toLowerCase();
+    if (extId) {
+      const suspiciousPatterns = ['fitfiletools', 'gotoes', 'dummy', '.gpx', '.tcx', 'edited', 'fake', 'test'];
+      const matchedPattern = suspiciousPatterns.find(p => extId.includes(p));
+      if (matchedPattern) {
+        flagged.push({
+          activityId: act.id,
+          reason: `Suspicious file upload detected: "${matchedPattern}" found in source (${extId.slice(0, 40)})`,
+        });
+        continue;
+      }
+      // Also flag if device is "Strava GPX" (explicit GPX upload)
+      const device = ((act as any).deviceName || '').toLowerCase();
+      if (device.includes('gpx') || device.includes('tcx')) {
+        flagged.push({
+          activityId: act.id,
+          reason: `Activity uploaded as ${(act as any).deviceName} file — not live recorded`,
+        });
+        continue;
+      }
+    }
     // Check 1: Pause trick — elapsed time >> moving time
     // If elapsed is more than 80% greater than moving time, suspicious
     if (act.movingTimeSeconds > 0 && act.elapsedTimeSeconds > 0) {

@@ -153,6 +153,8 @@ model Activity {
   startLatlng         String?        @map("start_latlng")    // "lat,lng"
   hasPolyline         Boolean        @default(false) @map("has_polyline")
   manual              Boolean        @default(false)
+  externalId          String?        @map("external_id")   // Strava external_id — reveals file uploads
+  deviceName          String?        @map("device_name")   // Recording device
   status              ActivityStatus @default(ACCEPTED)
   rejectionReason     String?        @map("rejection_reason")
   flagReason          String?        @map("flag_reason")  // Soft flag — activity stays ACCEPTED but admin sees alert
