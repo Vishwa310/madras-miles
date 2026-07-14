@@ -368,7 +368,8 @@ export async function validateSplitPace(
 
 /**
  * Fetch split pace data and validate — returns both the splits array and any flag reason.
- * Stores splits for later viewing without re-calling Strava.
+ * Uses Strava's splits_metric from activity detail for accuracy matching Strava UI.
+ * Falls back to stream calculation if splits_metric unavailable.
  */
 export async function fetchAndValidateSplits(
   stravaActivityId: string,
@@ -377,6 +378,38 @@ export async function fetchAndValidateSplits(
   maxPace: number = 16
 ): Promise<{ splits: { km: number; pace: number; status: string }[]; flagReason: string | null }> {
   try {
+    // Try activity detail first (has splits_metric)
+    const detailRes = await fetch(
+      `https://www.strava.com/api/v3/activities/${stravaActivityId}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (detailRes.ok) {
+      const detail = await detailRes.json() as any;
+      const splitsMetric = detail.splits_metric;
+
+      if (splitsMetric && splitsMetric.length > 0) {
+        const splits: { km: number; pace: number; status: string }[] = [];
+        let flagReason: string | null = null;
+
+        for (const s of splitsMetric) {
+          const dist = s.distance || 0;
+          const movingTime = s.moving_time || 0;
+          if (dist < 500) continue; // Skip very short partial splits
+
+          const pace = parseFloat(((movingTime / 60) / (dist / 1000)).toFixed(1));
+          let status = 'ok';
+          if (pace < minPace) { status = 'fast'; if (!flagReason) flagReason = `Km ${s.split}: ${pace} min/km (too fast)`; }
+          else if (pace > maxPace) { status = 'slow'; if (!flagReason) flagReason = `Km ${s.split}: ${pace} min/km (too slow)`; }
+
+          splits.push({ km: s.split, pace, status });
+        }
+
+        return { splits, flagReason };
+      }
+    }
+
+    // Fallback: calculate from streams
     const response = await fetch(
       `https://www.strava.com/api/v3/activities/${stravaActivityId}/streams?keys=distance,time&key_by_type=true`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -398,20 +431,25 @@ export async function fetchAndValidateSplits(
     let kmCount = 0;
     let flagReason: string | null = null;
 
-    for (let i = 0; i < distanceData.length; i++) {
+    for (let i = 1; i < distanceData.length; i++) {
       if (distanceData[i] - lastKmDistance >= 1000) {
         kmCount++;
-        const splitDist = distanceData[i] - lastKmDistance;
-        const splitTime = timeData[i] - lastKmTime;
-        const pace = parseFloat(((splitTime / 60) / (splitDist / 1000)).toFixed(1));
+        // Interpolate for exact 1km boundary
+        const dPrev = distanceData[i-1], dCurr = distanceData[i];
+        const tPrev = timeData[i-1], tCurr = timeData[i];
+        const ratio = (lastKmDistance + 1000 - dPrev) / (dCurr - dPrev);
+        const exactTime = tPrev + ratio * (tCurr - tPrev);
+
+        const splitTime = exactTime - lastKmTime;
+        const pace = parseFloat((splitTime / 60).toFixed(1)); // exactly 1km
 
         let status = 'ok';
         if (pace < minPace) { status = 'fast'; if (!flagReason) flagReason = `Km ${kmCount}: ${pace} min/km (too fast)`; }
         else if (pace > maxPace) { status = 'slow'; if (!flagReason) flagReason = `Km ${kmCount}: ${pace} min/km (too slow)`; }
 
         splits.push({ km: kmCount, pace, status });
-        lastKmDistance = distanceData[i];
-        lastKmTime = timeData[i];
+        lastKmTime = exactTime;
+        lastKmDistance += 1000;
       }
     }
 
