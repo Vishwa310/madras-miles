@@ -268,10 +268,7 @@ model ChallengeConfig {
   minFemalePerWeek         Int      @default(3) @map("min_female_per_week")
 
   // Substitution rules
-  maxSubstitutions         Int      @default(5) @map("max_substitutions") // per team
-  maleCanReturn            Boolean  @default(false) @map("male_can_return") // can retired males come back?
-  femaleCanReturn          Boolean  @default(true) @map("female_can_return") // can retired females come back?
-  maxReturns               Int      @default(1) @map("max_returns") // how many times can a player return (0 = never)
+  subCreditsPerTeam        Int      @default(8) @map("sub_credits_per_team") // total swap credits per team
 
   isActive                 Boolean  @default(true) @map("is_active")
   createdAt                DateTime @default(now()) @map("created_at")

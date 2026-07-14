@@ -66,10 +66,10 @@ export async function validateActivity(
     }
   }
 
-  // 8. Player active status check
-  const currentPlayer = await prisma.player.findUnique({ where: { id: player.id }, select: { status: true } });
-  if (currentPlayer?.status !== 'ACTIVE') {
-    return reject(`Player is ${currentPlayer?.status || 'unknown'} — only active players' activities count`);
+  // 8. Player active period check — was player active ON THIS DATE?
+  const wasActive = await wasPlayerActiveOnDate(player.id, activityDate);
+  if (!wasActive) {
+    return reject('Activity by an inactive player — not in active roster on this date');
   }
 
   // 9. Rest day check — cannot walk 7 consecutive days
@@ -204,6 +204,53 @@ export async function isRestDay(playerId: string, date: Date): Promise<boolean> 
 /**
  * Determine the week number (1, 2, or 3) for a given date relative to challenge start.
  */
+/**
+ * Determine if a player was active on a specific date.
+ * Logic: Check substitution log to build active/inactive timeline.
+ * - Player starts as their initial status (ACTIVE or STANDBY from assignment)
+ * - Each sub log entry where they're the retiredPlayer = they became inactive
+ * - Each sub log entry where they're the substitutePlayer = they became active
+ */
+export async function wasPlayerActiveOnDate(playerId: string, date: Date): Promise<boolean> {
+  const subEvents = await prisma.substitutionLog.findMany({
+    where: {
+      OR: [
+        { retiredPlayerId: playerId },
+        { substitutePlayerId: playerId },
+      ],
+    },
+    orderBy: { effectiveFrom: 'asc' },
+  });
+
+  // No sub events — check initial assigned status
+  if (subEvents.length === 0) {
+    const player = await prisma.player.findUnique({ where: { id: playerId }, select: { status: true } });
+    return player?.status === 'ACTIVE';
+  }
+
+  // Determine initial state before first sub event
+  let isActive: boolean;
+  const firstEvent = subEvents[0];
+  if (firstEvent.retiredPlayerId === playerId) {
+    isActive = true; // Was active before being subbed out
+  } else {
+    isActive = false; // Was standby before being subbed in
+  }
+
+  // Walk through events up to the target date
+  for (const event of subEvents) {
+    if (event.effectiveFrom > date) break;
+
+    if (event.retiredPlayerId === playerId) {
+      isActive = false; // Subbed out
+    } else if (event.substitutePlayerId === playerId) {
+      isActive = true; // Subbed in
+    }
+  }
+
+  return isActive;
+}
+
 export function getWeekNumber(activityDate: Date, challengeStart: Date): number {
   const diffMs = activityDate.getTime() - challengeStart.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));

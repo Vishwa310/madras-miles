@@ -132,7 +132,7 @@ export default function TeamsPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-4 gap-3 mb-4">
               <div className="bg-mm-bg-primary rounded-lg p-3 text-center">
                 <div className="font-display text-xl font-bold text-mm-teal">{team.playerCount}</div>
                 <div className="text-[0.6rem] text-mm-text-muted uppercase">Total Players</div>
@@ -142,7 +142,11 @@ export default function TeamsPage() {
                 <div className="text-[0.6rem] text-mm-text-muted uppercase">Active</div>
               </div>
               <div className="bg-mm-bg-primary rounded-lg p-3 text-center">
-                <div className="font-display text-sm font-bold text-purple-400">Min {team.minFemale}♀ / week</div>
+                <div className="font-display text-xl font-bold text-mm-orange">{8 - (team.subCreditsUsed || 0)}</div>
+                <div className="text-[0.6rem] text-mm-text-muted uppercase">Sub Credits Left</div>
+              </div>
+              <div className="bg-mm-bg-primary rounded-lg p-3 text-center">
+                <div className="font-display text-sm font-bold text-purple-400">Min {team.minFemale}♀</div>
                 <div className="text-[0.6rem] text-mm-text-muted uppercase">Female Req</div>
               </div>
             </div>

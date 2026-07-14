@@ -29,7 +29,7 @@ teamsRouter.get('/', async (req: Request, res: Response) => {
           },
         },
         _count: {
-          select: { players: true },
+          select: { players: true, substitutionLogs: true },
         },
       },
       orderBy: { name: 'asc' },
@@ -44,6 +44,7 @@ teamsRouter.get('/', async (req: Request, res: Response) => {
       maxPlayers: team.maxPlayers,
       minFemale: team.minFemale,
       playerCount: team._count.players,
+      subCreditsUsed: team._count.substitutionLogs,
       players: team.players,
       createdAt: team.createdAt,
     }));

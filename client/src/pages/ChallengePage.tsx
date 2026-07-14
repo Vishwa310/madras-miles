@@ -18,9 +18,7 @@ export default function ChallengePage() {
     useConstantRoster: false,
     minFemalePerWeek: 3,
     maxSubstitutions: 5,
-    maleCanReturn: false,
-    femaleCanReturn: true,
-    maxReturns: 1,
+    subCreditsPerTeam: 8,
   });
   const [saving, setSaving] = useState(false);
 
@@ -45,9 +43,7 @@ export default function ChallengePage() {
         useConstantRoster: data.config.useConstantRoster ?? false,
         minFemalePerWeek: data.config.minFemalePerWeek ?? 3,
         maxSubstitutions: data.config.maxSubstitutions ?? 5,
-        maleCanReturn: data.config.maleCanReturn ?? false,
-        femaleCanReturn: data.config.femaleCanReturn ?? true,
-        maxReturns: data.config.maxReturns ?? 1,
+        subCreditsPerTeam: data.config.subCreditsPerTeam ?? 8,
       });
     }
   }
@@ -128,29 +124,16 @@ export default function ChallengePage() {
         {/* Weekly Roster */}
         {/* Substitution Rules */}
         <Section title="Substitution Rules" icon="swap_horiz">
-          <div className="grid grid-cols-4 gap-4">
-            <Field label="Max Subs per Team" type="number" value={form.maxSubstitutions} onChange={v => setForm({...form, maxSubstitutions: +v})} />
-            <Field label="Max Returns per Player" type="number" value={form.maxReturns} onChange={v => setForm({...form, maxReturns: +v})} />
-            <div>
-              <label className="text-xs text-mm-text-muted uppercase tracking-wider">Male Can Return?</label>
-              <select value={form.maleCanReturn ? 'yes' : 'no'} onChange={e => setForm({...form, maleCanReturn: e.target.value === 'yes'})}
-                className="w-full mt-1 px-4 py-2.5 bg-mm-bg-primary border border-mm-border rounded-lg text-sm focus:border-mm-orange outline-none">
-                <option value="no">No — retired permanently</option>
-                <option value="yes">Yes — can return</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-mm-text-muted uppercase tracking-wider">Female Can Return?</label>
-              <select value={form.femaleCanReturn ? 'yes' : 'no'} onChange={e => setForm({...form, femaleCanReturn: e.target.value === 'yes'})}
-                className="w-full mt-1 px-4 py-2.5 bg-mm-bg-primary border border-mm-border rounded-lg text-sm focus:border-mm-orange outline-none">
-                <option value="yes">Yes — can return</option>
-                <option value="no">No — retired permanently</option>
-              </select>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Sub Credits per Team" type="number" value={form.subCreditsPerTeam} onChange={v => setForm({...form, subCreditsPerTeam: +v})} />
+            <div className="flex items-end">
+              <div className="p-3 bg-mm-bg-primary rounded-lg border border-mm-border text-xs text-mm-text-secondary leading-relaxed">
+                Each swap (player out + player in) = 1 credit used. Players can come back unlimited times, each return costs 1 credit.
+              </div>
             </div>
           </div>
           <p className="text-xs text-mm-text-muted mt-2">
-            {form.maxReturns === 0 ? 'No player can return once retired.' : `Players can return up to ${form.maxReturns} time(s).`}
-            {' '}Male: {form.maleCanReturn ? '✅ can return' : '❌ permanent'}. Female: {form.femaleCanReturn ? '✅ can return' : '❌ permanent'}.
+            Teams get {form.subCreditsPerTeam} total credits. Must maintain 15 active + min 3 women at all times.
           </p>
         </Section>
 

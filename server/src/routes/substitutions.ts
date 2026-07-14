@@ -15,7 +15,7 @@ substitutionsRouter.use(authorize('ADMIN'));
  * Females: can be brought back later
  */
 substitutionsRouter.post('/', async (req: Request, res: Response) => {
-  const { retiredPlayerId, substitutePlayerId, notes } = req.body;
+  const { retiredPlayerId, substitutePlayerId, notes, effectiveDate } = req.body;
 
   if (!retiredPlayerId || !substitutePlayerId) {
     return res.status(400).json({ error: 'Required: retiredPlayerId, substitutePlayerId' });
@@ -25,67 +25,43 @@ substitutionsRouter.post('/', async (req: Request, res: Response) => {
     const retired = await prisma.player.findUnique({ where: { id: retiredPlayerId } });
     const sub = await prisma.player.findUnique({ where: { id: substitutePlayerId } });
 
-    if (!retired) return res.status(404).json({ error: 'Retired player not found' });
-    if (!sub) return res.status(404).json({ error: 'Substitute player not found' });
-    if (retired.status === 'RETIRED') return res.status(400).json({ error: 'Player is already retired' });
+    if (!retired) return res.status(404).json({ error: 'Player to sub out not found' });
+    if (!sub) return res.status(404).json({ error: 'Replacement player not found' });
+    if (retired.status !== 'ACTIVE') return res.status(400).json({ error: 'Player is not currently active' });
     if (retired.teamId !== sub.teamId) return res.status(400).json({ error: 'Players must be on the same team' });
     if (sub.status === 'ACTIVE') return res.status(400).json({ error: 'Replacement player is already active' });
 
-    // Load challenge config for dynamic substitution rules
+    // Check credits
     const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
-    const maxSubs = challenge?.maxSubstitutions ?? 5;
-    const maleCanReturn = challenge?.maleCanReturn ?? false;
-    const femaleCanReturn = challenge?.femaleCanReturn ?? true;
-    const maxReturns = challenge?.maxReturns ?? 1;
+    const maxCredits = (challenge as any)?.subCreditsPerTeam ?? 8;
+    const usedCredits = await prisma.substitutionLog.count({ where: { teamId: retired.teamId } });
 
-    // Max substitutions per team
-    const teamSubCount = await prisma.substitutionLog.count({ where: { teamId: retired.teamId } });
-    if (teamSubCount >= maxSubs) {
-      return res.status(400).json({ error: `Team has reached maximum ${maxSubs} substitutions` });
+    if (usedCredits >= maxCredits) {
+      return res.status(400).json({ error: `Team has used all ${maxCredits} substitution credits (${usedCredits}/${maxCredits} used)` });
     }
 
-    if (sub.status === 'RETIRED') {
-      // Check return eligibility based on gender
-      if (sub.gender === 'MALE' && !maleCanReturn) {
-        return res.status(400).json({ error: 'Retired male players cannot come back (config: maleCanReturn=false)' });
-      }
-      if (sub.gender === 'FEMALE' && !femaleCanReturn) {
-        return res.status(400).json({ error: 'Retired female players cannot come back (config: femaleCanReturn=false)' });
-      }
-      // Check max return count
-      if (maxReturns === 0) {
-        return res.status(400).json({ error: 'No returns allowed (config: maxReturns=0)' });
-      }
-      const previousReturns = await prisma.substitutionLog.count({
-        where: { substitutePlayerId: sub.id },
-      });
-      if (previousReturns >= maxReturns) {
-        return res.status(400).json({ error: `Player has already returned ${maxReturns} time(s) — cannot return again` });
-      }
-    }
-
-    const now = new Date();
+    const effectiveFrom = effectiveDate ? new Date(effectiveDate) : new Date();
 
     const result = await prisma.$transaction(async (tx) => {
-      // Retire the player
+      // Sub out: set to STANDBY (not RETIRED — they can come back)
       await tx.player.update({
         where: { id: retiredPlayerId },
-        data: { status: 'RETIRED', substitutedById: substitutePlayerId, substitutedAt: now },
+        data: { status: 'STANDBY', substitutedAt: effectiveFrom },
       });
 
-      // Activate the substitute (reactivate if female returning)
+      // Sub in: activate
       await tx.player.update({
         where: { id: substitutePlayerId },
-        data: { slot: 'MAIN', status: 'ACTIVE' },
+        data: { status: 'ACTIVE' },
       });
 
-      // Log it
+      // Log it (1 credit used)
       const log = await tx.substitutionLog.create({
         data: {
           teamId: retired.teamId,
           retiredPlayerId,
           substitutePlayerId,
-          effectiveFrom: now,
+          effectiveFrom,
           performedById: req.user!.userId,
           notes: notes || null,
         },
@@ -99,10 +75,16 @@ substitutionsRouter.post('/', async (req: Request, res: Response) => {
     });
 
     // Audit logging
-    await logAudit(retired.teamId, 'retired', result.retiredPlayer.user.name, `Retired (replaced by ${result.substitutePlayer.user.name})`, req.user!.userId);
-    await logAudit(retired.teamId, 'substitution', result.substitutePlayer.user.name, `Activated (replacing ${result.retiredPlayer.user.name})`, req.user!.userId);
+    await logAudit(retired.teamId, 'substitution', result.retiredPlayer.user.name,
+      `Subbed out → ${result.substitutePlayer.user.name} (credit ${usedCredits + 1}/${maxCredits})`, req.user!.userId);
+    await logAudit(retired.teamId, 'substitution', result.substitutePlayer.user.name,
+      `Subbed in (replacing ${result.retiredPlayer.user.name})`, req.user!.userId);
 
-    return res.status(201).json({ substitution: result });
+    return res.status(201).json({
+      substitution: result,
+      creditsUsed: usedCredits + 1,
+      creditsRemaining: maxCredits - usedCredits - 1,
+    });
   } catch (err) {
     console.error('Error executing substitution:', err);
     return res.status(500).json({ error: 'Internal server error' });
