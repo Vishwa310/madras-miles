@@ -83,11 +83,11 @@ export async function validateActivity(
 
   // 10. Daily cap check (7 km) — don't reject, but cap
   // Use IST day boundaries (UTC+5:30)
-  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-  const actInIST = new Date(activityDate.getTime() + IST_OFFSET_MS);
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const actInIST = new Date(activityDate.getTime() + istOffset);
   const dayStartIST = new Date(actInIST);
   dayStartIST.setHours(0, 0, 0, 0);
-  const dayStart = new Date(dayStartIST.getTime() - IST_OFFSET_MS); // back to UTC
+  const dayStart = new Date(dayStartIST.getTime() - istOffset); // back to UTC
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1); // +24h - 1ms
 
   const dailyDistanceResult = await prisma.activity.aggregate({
