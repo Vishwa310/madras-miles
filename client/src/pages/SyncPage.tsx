@@ -7,6 +7,7 @@ export default function SyncPage() {
   const [loading, setLoading] = useState(true);
   const [syncAfter, setSyncAfter] = useState('');
   const [history, setHistory] = useState<any[]>([]);
+  const [syncIssues, setSyncIssues] = useState<any[]>([]);
   const [syncLog, setSyncLog] = useState<{ player: string; status: string; activities?: number; accepted?: number; rejected?: number; skipped?: number; flagged?: number; reason?: string }[]>([]);
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, currentPlayer: '', done: false });
   const [syncSummary, setSyncSummary] = useState<{ totalFetched: number; totalAccepted: number; totalRejected: number; totalSkipped: number } | null>(null);
@@ -41,13 +42,15 @@ export default function SyncPage() {
   }, [nextSyncAt]);
 
   async function loadData() {
-    const [historyData, chalData, autoData] = await Promise.all([
+    const [historyData, chalData, autoData, issuesData] = await Promise.all([
       api.get('/sync/history'),
       api.get('/challenge'),
       api.get('/sync/auto'),
+      api.get('/sync/issues'),
     ]);
     setHistory(historyData.history || []);
     setChallenge(chalData.config);
+    setSyncIssues(issuesData.issues || []);
     setAutoEnabled(autoData.enabled);
     setAutoInterval(autoData.intervalHours);
     setNextSyncAt(autoData.nextSyncAt);
@@ -320,6 +323,31 @@ export default function SyncPage() {
           <p className="text-xs text-mm-text-muted">Enable to automatically sync all players on a schedule. Activities will be fetched, validated, and scored without manual intervention.</p>
         )}
       </div>
+
+      {/* Sync Issues */}
+      {syncIssues.length > 0 && (
+        <div className="bg-mm-bg-card border border-mm-hot/20 rounded-2xl p-6 mb-6">
+          <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-mm-hot mb-4 flex items-center gap-2">
+            <span className="icon-sm">warning</span> Players with 0 Activities ({syncIssues.length})
+          </h3>
+          <p className="text-xs text-mm-text-muted mb-3">These players have no synced activities — they may not have walked yet, or their sync failed.</p>
+          <div className="grid grid-cols-2 gap-2">
+            {syncIssues.map((p: any) => (
+              <div key={p.playerId} className="flex items-center gap-2 px-3 py-2 bg-mm-bg-primary rounded-lg border border-mm-border">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[0.5rem] font-bold text-white flex-shrink-0" style={{ background: p.teamEmblem || '#6B7280' }}>
+                  {p.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium truncate">{p.name}</div>
+                  <div className="text-[0.6rem] text-mm-text-muted">{p.team}</div>
+                </div>
+                {p.tokenExpired && <span className="text-[0.55rem] text-mm-hot font-semibold">Token expired</span>}
+                {!p.hasToken && <span className="text-[0.55rem] text-mm-hot font-semibold">No token</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Sync history */}
       <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-6">

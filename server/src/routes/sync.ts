@@ -664,3 +664,37 @@ syncRouter.get('/history', authorize('ADMIN'), async (_req: Request, res: Respon
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+/**
+ * GET /api/sync/issues
+ * List players who have 0 activities (possibly failed sync)
+ * Admin only
+ */
+syncRouter.get('/issues', authorize('ADMIN'), async (_req: Request, res: Response) => {
+  try {
+    const players = await prisma.player.findMany({
+      include: {
+        user: { select: { name: true, stravaAthleteId: true, stravaAccessToken: true, tokenExpiresAt: true } },
+        team: { select: { name: true, emblem: true } },
+        _count: { select: { activities: true } },
+      },
+    });
+
+    const issues = players
+      .filter(p => p._count.activities === 0)
+      .map(p => ({
+        playerId: p.id,
+        name: p.user.name,
+        stravaId: p.user.stravaAthleteId,
+        team: p.team.name,
+        teamEmblem: p.team.emblem,
+        hasToken: !!p.user.stravaAccessToken,
+        tokenExpired: p.user.tokenExpiresAt ? new Date(p.user.tokenExpiresAt) < new Date() : true,
+      }));
+
+    return res.json({ issues, total: issues.length });
+  } catch (err) {
+    console.error('Error getting sync issues:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
