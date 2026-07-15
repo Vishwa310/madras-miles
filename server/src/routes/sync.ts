@@ -304,20 +304,33 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
       const { fetchAndValidateSplits } = await import('../services/validation');
       const recentActivities = await prisma.activity.findMany({
         where: { playerId: player.id, status: 'ACCEPTED', syncedAt: { gte: new Date(Date.now() - 60000) } },
-        select: { id: true, stravaActivityId: true },
+        select: { id: true, stravaActivityId: true, creditedMeters: true },
       });
 
       for (const act of recentActivities) {
         try {
           const { splits, flagReason: splitFlag } = await fetchAndValidateSplits(act.stravaActivityId, tokenResult.accessToken);
+
+          // Count violated splits and deduct from credited distance
+          const violatedKms = splits.filter(s => s.status !== 'ok').length;
+          let newCredited = act.creditedMeters || 0;
+          if (violatedKms > 0) {
+            newCredited = Math.max(0, newCredited - (violatedKms * 1000));
+          }
+
+          const flagMsg = splitFlag
+            ? `${splitFlag} — ${violatedKms} km deducted (credited: ${(newCredited / 1000).toFixed(2)} km)`
+            : undefined;
+
           await prisma.activity.update({
             where: { id: act.id },
             data: {
               splitData: splits.length > 0 ? splits : undefined,
-              ...(splitFlag && { flagReason: splitFlag }),
+              ...(violatedKms > 0 && { creditedMeters: newCredited }),
+              ...(flagMsg && { flagReason: flagMsg }),
             },
           });
-          if (splitFlag) splitFlagged++;
+          if (flagMsg) splitFlagged++;
           // Small delay to respect Strava rate limits
           await new Promise(r => setTimeout(r, 500));
         } catch {
@@ -439,16 +452,28 @@ syncRouter.post('/split-pace/:activityId/analyze', authorize('ADMIN'), async (re
       return res.json({ status: 'no_data', reason: 'No stream data available', splits: [] });
     }
 
-    // Store splits + flag if needed
+    // Count violated splits and deduct from credited distance
+    const violatedKms = splits.filter(s => s.status !== 'ok').length;
+    let newCredited = activity.creditedMeters || activity.distanceMeters || 0;
+    if (violatedKms > 0) {
+      newCredited = Math.max(0, newCredited - (violatedKms * 1000));
+    }
+
+    const flagMsg = flagReason
+      ? `${flagReason} — ${violatedKms} km deducted (credited: ${(newCredited / 1000).toFixed(2)} km)`
+      : undefined;
+
+    // Store splits + flag + deduct
     await prisma.activity.update({
       where: { id: activity.id },
       data: {
         splitData: splits,
-        ...(flagReason && { flagReason }),
+        ...(violatedKms > 0 && { creditedMeters: newCredited }),
+        ...(flagMsg && { flagReason: flagMsg }),
       },
     });
 
-    return res.json({ status: flagReason ? 'flagged' : 'clean', splits, reason: flagReason || 'All splits OK', cached: false });
+    return res.json({ status: flagMsg ? 'flagged' : 'clean', splits, reason: flagMsg || 'All splits OK', deducted: violatedKms, creditedKm: (newCredited / 1000).toFixed(2), cached: false });
   } catch (err: any) {
     console.error('Split analyze error:', err);
     return res.json({ status: 'error', reason: err.message, splits: [] });
