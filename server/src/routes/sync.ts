@@ -218,7 +218,7 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
         orderBy: { startDate: 'desc' },
         select: { startDate: true },
       });
-      afterDate = lastSynced ? new Date(lastSynced.startDate.getTime() - 86400000) : challenge.startDate;
+      afterDate = lastSynced ? new Date(lastSynced.startDate.getTime() - 86400000) : new Date(challenge.startDate.getTime() - 86400000);
     }
     const afterTimestamp = Math.floor(afterDate.getTime() / 1000);
 
