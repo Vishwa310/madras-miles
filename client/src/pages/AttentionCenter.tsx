@@ -5,6 +5,9 @@ import { PageLoader } from '../lib/loaders';
 export default function AttentionCenter() {
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [teamFilter, setTeamFilter] = useState('');
+  const [showDismissed, setShowDismissed] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -30,10 +33,6 @@ export default function AttentionCenter() {
   }
 
   if (loading) return <PageLoader />;
-
-  const [statusFilter, setStatusFilter] = useState('');
-  const [teamFilter, setTeamFilter] = useState('');
-  const [showDismissed, setShowDismissed] = useState(false);
 
   const teams = [...new Set(activities.map(a => a.player?.team?.name).filter(Boolean))].sort();
 
