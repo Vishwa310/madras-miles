@@ -321,6 +321,20 @@ export default function TeamGridView() {
                         {splitResult.reason}
                       </div>
                     )}
+                    {/* Split pace list */}
+                    {act.splitData && act.splitData.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {act.splitData.map((s: any, i: number) => (
+                          <span key={i} className={`px-2 py-0.5 rounded text-[0.65rem] font-mono font-semibold border ${
+                            s.status === 'ok' ? 'bg-mm-teal/10 text-mm-teal border-mm-teal/20' :
+                            s.status === 'fast' ? 'bg-mm-hot/10 text-mm-hot border-mm-hot/20' :
+                            'bg-mm-gold/10 text-mm-gold border-mm-gold/20'
+                          }`}>
+                            Km{s.km}: {s.pace}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {/* Override actions */}
                   <div className="flex items-center gap-1.5 flex-shrink-0">
