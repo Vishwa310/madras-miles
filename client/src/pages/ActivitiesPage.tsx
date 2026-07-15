@@ -40,7 +40,7 @@ function getWeekKey(date: Date): string {
   const monday = new Date(date);
   monday.setDate(date.getDate() - ((date.getDay() + 6) % 7));
   monday.setHours(0, 0, 0, 0);
-  return monday.toISOString().split('T')[0];
+  return monday.toLocaleDateString('en-CA');
 }
 
 function groupByWeek(activities: any[]): WeekGroup[] {
