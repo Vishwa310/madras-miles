@@ -87,8 +87,10 @@ export default function AttentionCenter() {
                   <span className="text-mm-text-muted">{new Date(a.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
                 <div className={`text-xs mt-1 ${a.status === 'REJECTED' ? 'text-mm-hot' : 'text-mm-gold'}`}>
-                  {a.status === 'REJECTED' ? '❌ ' : '⚠️ '}
-                  {a.rejectionReason || a.flagReason || 'Needs review'}
+                  {a.flagReason && <span>⚠️ {a.flagReason}</span>}
+                  {a.rejectionReason && a.flagReason && <br />}
+                  {a.rejectionReason && <span>{a.status === 'REJECTED' ? '❌' : 'ℹ️'} {a.rejectionReason}</span>}
+                  {!a.flagReason && !a.rejectionReason && <span>Needs review</span>}
                 </div>
                 {/* Split data if available */}
                 {a.splitData && a.splitData.length > 0 && (
