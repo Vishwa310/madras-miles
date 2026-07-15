@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { isLoggedIn } from '../lib/api';
 import { STRAVA_CLIENT_ID } from '../lib/config';
 
-const STRAVA_AUTH_URL = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/callback')}&scope=read,activity:read_all&approval_prompt=auto`;
+const STRAVA_AUTH_URL = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/callback')}&scope=read,activity:read_all&approval_prompt=force`;
 
 const QUOTES = [
   "Your legs are not giving out. Your head is giving up.",
