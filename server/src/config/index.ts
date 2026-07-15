@@ -11,9 +11,9 @@ export const config = {
   },
 
   strava: {
-    clientId: process.env.STRAVA_CLIENT_ID || '',
-    clientSecret: process.env.STRAVA_CLIENT_SECRET || '',
-    redirectUri: process.env.STRAVA_REDIRECT_URI || 'http://localhost:3001/api/auth/strava/callback',
+    clientId: process.env.STRAVA_CLIENT_ID || '159567',
+    clientSecret: process.env.STRAVA_CLIENT_SECRET || 'ba7475e523ff37a35c06bf1fb191a9affeed21f9',
+    redirectUri: process.env.STRAVA_REDIRECT_URI || 'https://madras-walkathon.web.app/auth/callback',
   },
 
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
