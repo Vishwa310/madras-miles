@@ -61,18 +61,7 @@ export async function runFraudDetection(playerId: string, afterDate?: Date): Pro
       }
     }
 
-    // Check 2: Unrealistic max speed vs avg speed
-    // If max speed is more than 2.5x the average, someone sprinted/used vehicle
-    if (act.avgSpeed > 0 && act.maxSpeed > 0) {
-      const speedRatio = act.maxSpeed / act.avgSpeed;
-      if (speedRatio > 2.5) {
-        flagged.push({
-          activityId: act.id,
-          reason: `Speed spike: max ${(act.maxSpeed * 3.6).toFixed(1)} km/h vs avg ${(act.avgSpeed * 3.6).toFixed(1)} km/h (${speedRatio.toFixed(1)}x difference)`,
-        });
-        continue;
-      }
-    }
+    // Check 2: (Removed — GPS jumps cause too many false positives. Split pace check handles real cheating.)
 
     // Check 3: Overlapping activities — same player, overlapping time windows
     const actStart = act.startDate.getTime();
