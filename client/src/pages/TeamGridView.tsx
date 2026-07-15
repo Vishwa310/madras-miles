@@ -69,7 +69,7 @@ export default function TeamGridView() {
     const dateList: string[] = [];
     const d = new Date(start);
     while (d <= effectiveEnd) {
-      dateList.push(d.toISOString().split('T')[0]);
+      dateList.push(d.toLocaleDateString('en-CA')); // YYYY-MM-DD in local TZ
       d.setDate(d.getDate() + 1);
     }
     setDates(dateList);
@@ -77,6 +77,12 @@ export default function TeamGridView() {
     // Fetch activities for this team only
     const actData = await api.get(`/activities?teamId=${teamId}&limit=5000`);
     const teamActivities = actData.activities || [];
+
+    // Helper: get local date string (IST) from UTC datetime string
+    const toLocalDate = (utcStr: string) => {
+      const d = new Date(utcStr);
+      return d.toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
+    };
 
     // Build player → day → cell map
     const pdMap = new Map<string, Map<string, DayCell>>();
@@ -86,7 +92,7 @@ export default function TeamGridView() {
 
       for (const date of dateList) {
         const dayActs = teamActivities.filter((a: any) =>
-          a.playerId === player.id && a.startDate.split('T')[0] === date
+          a.playerId === player.id && toLocalDate(a.startDate) === date
         );
 
         const totalKm = dayActs.reduce((s: number, a: any) => s + a.distanceMeters / 1000, 0);
@@ -162,7 +168,7 @@ export default function TeamGridView() {
                   const d = new Date(date);
                   const dayName = d.toLocaleDateString('en', { weekday: 'short' });
                   const dayNum = d.getDate();
-                  const isToday = date === new Date().toISOString().split('T')[0];
+                  const isToday = date === new Date().toLocaleDateString('en-CA');
                   const isMonday = d.getDay() === 1;
                   return (
                     <th key={date} className={`px-1 py-3 text-center text-[0.6rem] uppercase tracking-wider border-b border-mm-border min-w-[44px] ${isToday ? 'text-mm-orange' : 'text-mm-text-muted'} ${isMonday ? 'border-l-2 border-l-mm-orange/30' : ''}`}>

@@ -172,7 +172,7 @@ export default function PlayerDashboard() {
         const steps = Math.round(myKm * 1312);
         const calories = Math.round(myKm * 65);
         const filterCoffees = Math.floor(calories / 95);
-        const daysWalked = new Set(accepted.map(a => a.startDate.split('T')[0])).size;
+        const daysWalked = new Set(accepted.map(a => new Date(a.startDate).toLocaleDateString('en-CA'))).size;
         const avgPace = accepted.length > 0
           ? accepted.reduce((s, a) => s + (a.movingTimeSeconds / 60) / (a.distanceMeters / 1000), 0) / accepted.length
           : 0;
@@ -372,8 +372,8 @@ function getWeekData(accepted: any[]) {
   for (let i = 1; i <= 7; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() - (dayOfWeek - i));
-    const dateStr = d.toISOString().split('T')[0];
-    const dayActivities = accepted.filter(a => a.startDate.split('T')[0] === dateStr);
+    const dateStr = d.toLocaleDateString('en-CA'); // YYYY-MM-DD in local TZ
+    const dayActivities = accepted.filter(a => new Date(a.startDate).toLocaleDateString('en-CA') === dateStr);
     const km = dayActivities.reduce((s, a) => s + a.distanceMeters / 1000, 0);
     result.push({ label: days[i - 1], km, isToday: i === dayOfWeek });
   }
