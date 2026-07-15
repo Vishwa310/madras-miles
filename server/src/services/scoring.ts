@@ -38,7 +38,8 @@ export async function computePlayerRankings(teamId?: string): Promise<PlayerRank
 
   // Get challenge date range
   const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
-  const dateFilter = challenge ? { gte: challenge.startDate, lte: challenge.endDate } : undefined;
+  const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+  const dateFilter = challenge ? { gte: new Date(challenge.startDate.getTime() - IST_OFFSET), lte: new Date(challenge.endDate.getTime() + IST_OFFSET) } : undefined;
 
   const players = await prisma.player.findMany({
     where,

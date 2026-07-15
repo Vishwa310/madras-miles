@@ -42,7 +42,8 @@ activitiesRouter.get('/', async (req: Request, res: Response) => {
       // Default: filter to active challenge date range
       const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
       if (challenge) {
-        where.startDate = { gte: challenge.startDate, lte: challenge.endDate };
+        const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+        where.startDate = { gte: new Date(challenge.startDate.getTime() - IST_OFFSET), lte: new Date(challenge.endDate.getTime() + IST_OFFSET) };
       }
     }
 

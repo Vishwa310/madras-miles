@@ -38,9 +38,12 @@ export async function validateActivity(
     flagReason = 'No GPS start location — needs manual review';
   }
 
-  // 5. Challenge date window check
+  // 5. Challenge date window check (with IST timezone buffer — 5.5 hours)
   const activityDate = new Date(rawActivity.start_date);
-  if (activityDate < challenge.startDate || activityDate > challenge.endDate) {
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+  const startWithBuffer = new Date(challenge.startDate.getTime() - IST_OFFSET_MS);
+  const endWithBuffer = new Date(challenge.endDate.getTime() + IST_OFFSET_MS);
+  if (activityDate < startWithBuffer || activityDate > endWithBuffer) {
     return reject('Activity outside challenge window');
   }
 
