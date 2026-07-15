@@ -16,7 +16,7 @@ playersRouter.use(authenticate);
 playersRouter.get('/unassigned', authorize('ADMIN'), async (_req: Request, res: Response) => {
   try {
     const unassigned = await prisma.user.findMany({
-      where: { player: null },
+      where: { player: null, role: 'PLAYER' },
       select: {
         id: true,
         name: true,
