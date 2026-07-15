@@ -58,8 +58,8 @@
 
   /* Text */
   --color-mm-text-primary: #ffffff;
-  --color-mm-text-secondary: #a0a0b8;
-  --color-mm-text-muted: #6b6b80;
+  --color-mm-text-secondary: #b8b8d0;
+  --color-mm-text-muted: #8585a0;
 
   /* Border */
   --color-mm-border: #2a2a40;
@@ -86,8 +86,8 @@
   --color-mm-blue: #0891b2;
 
   --color-mm-text-primary: #2c2418;
-  --color-mm-text-secondary: #5c5040;
-  --color-mm-text-muted: #9a8e80;
+  --color-mm-text-secondary: #4a3f35;
+  --color-mm-text-muted: #7a6e62;
 
   --color-mm-border: #e0d6ca;
 }
@@ -95,6 +95,7 @@
 /* Base styles */
 body {
   font-family: var(--font-body);
+  font-size: 15px;
   background-color: var(--color-mm-bg-primary);
   color: var(--color-mm-text-primary);
   -webkit-font-smoothing: antialiased;
