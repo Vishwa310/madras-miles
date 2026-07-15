@@ -52,14 +52,16 @@ export function getStravaAuthUrl(state?: string): string {
  * Refresh an expired access token
  */
 export async function refreshStravaToken(refreshToken: string): Promise<StravaRefreshResponse> {
+  // Hardcoded — these don't change and env vars on Render may be incorrect
+  const CLIENT_ID = '159567';
+  const CLIENT_SECRET = 'ba7475e523ff37a35c06bf1fb191a9affeed21f9';
+
   const params = new URLSearchParams({
-    client_id: String(config.strava.clientId),
-    client_secret: String(config.strava.clientSecret),
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET,
     refresh_token: refreshToken,
     grant_type: 'refresh_token',
   });
-
-  console.log(`[Strava] Refreshing token with client_id=${config.strava.clientId}, refresh_token=${refreshToken.slice(0, 8)}...`);
 
   const response = await fetch('https://www.strava.com/oauth/token', {
     method: 'POST',
@@ -73,9 +75,7 @@ export async function refreshStravaToken(refreshToken: string): Promise<StravaRe
     throw new Error(`Strava token refresh failed: ${response.status} ${error}`);
   }
 
-  const result = await response.json() as StravaRefreshResponse;
-  console.log(`[Strava] Token refreshed successfully, new token: ${result.access_token.slice(0, 8)}...`);
-  return result;
+  return response.json() as Promise<StravaRefreshResponse>;
 }
 
 /**

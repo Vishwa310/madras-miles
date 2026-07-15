@@ -57,12 +57,13 @@ authRouter.post('/strava/register', async (req, res) => {
       });
       console.log(`[OAuth] New user: ${user.name}`);
     } else {
+      const validToken = access_token && access_token.length > 10 && access_token !== 'fake' && access_token !== 'test';
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
-          stravaAccessToken: access_token,
-          stravaRefreshToken: refresh_token,
-          tokenExpiresAt: new Date(expires_at * 1000),
+          ...(validToken && { stravaAccessToken: access_token }),
+          ...(validToken && { stravaRefreshToken: refresh_token }),
+          ...(validToken && { tokenExpiresAt: new Date(expires_at * 1000) }),
           name: `${athlete.firstname} ${athlete.lastname}`,
           avatarUrl: athlete.profile || undefined,
           email: athlete.email || user.email || undefined,
