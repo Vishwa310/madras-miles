@@ -168,3 +168,54 @@ activitiesRouter.post('/:id/reject', authorize('ADMIN'), async (req: Request, re
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+/**
+ * GET /api/activities/attention
+ * List activities needing attention (rejected + flagged, not dismissed)
+ * Admin only
+ */
+activitiesRouter.get('/attention', authorize('ADMIN'), async (_req: Request, res: Response) => {
+  try {
+    const activities = await prisma.activity.findMany({
+      where: {
+        dismissed: false,
+        OR: [
+          { status: 'REJECTED' },
+          { flagReason: { not: null } },
+        ],
+      },
+      include: {
+        player: {
+          include: {
+            user: { select: { name: true, avatarUrl: true } },
+            team: { select: { id: true, name: true, emblem: true } },
+          },
+        },
+      },
+      orderBy: { startDate: 'desc' },
+    });
+
+    return res.json({ activities, total: activities.length });
+  } catch (err) {
+    console.error('Error fetching attention activities:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/activities/:id/dismiss
+ * Dismiss an activity from the Attention Center (hides it, doesn't change status)
+ * Admin only
+ */
+activitiesRouter.post('/:id/dismiss', authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    await prisma.activity.update({
+      where: { id: req.params.id },
+      data: { dismissed: true },
+    });
+    return res.json({ message: 'Dismissed' });
+  } catch (err) {
+    console.error('Error dismissing activity:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});

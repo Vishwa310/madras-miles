@@ -14,6 +14,7 @@ import ChallengePage from './pages/ChallengePage';
 import SubstitutionsPage from './pages/SubstitutionsPage';
 import ActivitiesPage from './pages/ActivitiesPage';
 import TeamGridView from './pages/TeamGridView';
+import AttentionCenter from './pages/AttentionCenter';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="team" element={<CaptainTeamView />} />
           <Route path="teams" element={<TeamsPage />} />
           <Route path="players" element={<PlayersOpsPage />} />
+          <Route path="attention" element={<AttentionCenter />} />
           <Route path="players-list" element={<PlayersPage />} />
           <Route path="sync" element={<SyncPage />} />
           <Route path="rules" element={<RulesPage />} />

@@ -8,6 +8,7 @@ const adminNav = [
   { path: '/app/players', icon: 'directions_run', label: 'Players' },
   { path: '/app/teams', icon: 'groups', label: 'Teams' },
   { path: '/app/grid', icon: 'grid_on', label: 'Team Grid' },
+  { path: '/app/attention', icon: 'notification_important', label: 'Attention' },
   { path: '/app/challenge', icon: 'emoji_events', label: 'Config' },
   { path: '/app/sync', icon: 'sync', label: 'Sync' },
 ];
@@ -37,7 +38,7 @@ export default function AppLayout() {
   const [user, setUser] = useState<any>(null);
   const [viewAs, setViewAs] = useState<'ADMIN' | 'PLAYER'>('ADMIN');
 
-  const adminPaths = ['/app/dashboard', '/app/players', '/app/teams', '/app/grid', '/app/challenge', '/app/sync', '/app/rules'];
+  const adminPaths = ['/app/dashboard', '/app/players', '/app/teams', '/app/grid', '/app/attention', '/app/challenge', '/app/sync', '/app/rules'];
 
   useEffect(() => {
     if (!isLoggedIn()) { navigate('/login'); return; }
