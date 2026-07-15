@@ -799,20 +799,18 @@ export default function PlayersOpsPage() {
                         </span>
                       )}
                     </div>
-                    {/* Split bars */}
+                    {/* Split pace list */}
                     {result && result.splits.length > 0 && (
-                      <div className="flex items-end gap-0.5 h-8 mt-1">
-                        {result.splits.map((s, i) => {
-                          const height = Math.min(100, Math.max(20, (s.pace / 20) * 100));
-                          return (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-0.5" title={`Km ${s.km}: ${s.pace} min/km`}>
-                              <div className={`w-full rounded-sm transition-all ${
-                                s.status === 'ok' ? 'bg-mm-teal/60' : s.status === 'fast' ? 'bg-mm-hot/80' : 'bg-mm-gold/80'
-                              }`} style={{ height: `${height}%` }} />
-                              <span className="text-[0.5rem] text-mm-text-muted">{s.pace}</span>
-                            </div>
-                          );
-                        })}
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {result.splits.map((s, i) => (
+                          <span key={i} className={`px-2 py-0.5 rounded text-[0.65rem] font-mono font-semibold border ${
+                            s.status === 'ok' ? 'bg-mm-teal/10 text-mm-teal border-mm-teal/20' :
+                            s.status === 'fast' ? 'bg-mm-hot/10 text-mm-hot border-mm-hot/20' :
+                            'bg-mm-gold/10 text-mm-gold border-mm-gold/20'
+                          }`}>
+                            Km{s.km}: {s.pace}
+                          </span>
+                        ))}
                       </div>
                     )}
                     {result && result.status === 'flagged' && (
