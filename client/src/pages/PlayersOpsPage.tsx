@@ -377,7 +377,7 @@ export default function PlayersOpsPage() {
             <span className="text-xs text-mm-text-muted">— Logged in via Strava but not assigned to any team</span>
           </div>
           <div className="space-y-2">
-            {unassigned.map(u => (
+            {unassigned.filter(u => !search || u.name?.toLowerCase().includes(search.toLowerCase()) || u.stravaAthleteId?.includes(search)).map(u => (
               <div key={u.id} className="flex items-center justify-between p-3 bg-mm-bg-primary rounded-lg">
                 <div className="flex items-center gap-3">
                   {u.avatarUrl ? (
