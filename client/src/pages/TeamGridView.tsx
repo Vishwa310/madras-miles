@@ -311,6 +311,9 @@ export default function TeamGridView() {
                     {act.rejectionReason && (
                       <div className="text-xs text-mm-hot mt-0.5 truncate">{act.rejectionReason}</div>
                     )}
+                    {act.flagReason && (
+                      <div className="text-xs text-mm-gold mt-0.5 truncate">⚠️ {act.flagReason}</div>
+                    )}
                     {splitResult && splitResult.id === act.id && (
                       <div className={`text-xs mt-0.5 ${
                         splitResult.status === 'clean' ? 'text-mm-teal' :
