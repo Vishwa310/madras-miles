@@ -109,14 +109,15 @@ export async function getValidAccessToken(
 }
 
 /**
- * Fetch athlete activities from Strava
+ * Fetch athlete activities from Strava (with 401 retry)
  */
 export async function fetchStravaActivities(
   accessToken: string,
   after?: number,
   page: number = 1,
-  perPage: number = 50
-) {
+  perPage: number = 50,
+  refreshToken?: string
+): Promise<any[]> {
   const params = new URLSearchParams({
     page: page.toString(),
     per_page: perPage.toString(),
@@ -126,9 +127,24 @@ export async function fetchStravaActivities(
     params.set('after', after.toString());
   }
 
-  const response = await fetch(`${STRAVA_API_BASE}/athlete/activities?${params}`, {
+  let response = await fetch(`${STRAVA_API_BASE}/athlete/activities?${params}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+
+  // On 401, try refreshing token and retry once
+  if (response.status === 401 && refreshToken) {
+    try {
+      const refreshed = await refreshStravaToken(refreshToken);
+      // Retry with new token
+      response = await fetch(`${STRAVA_API_BASE}/athlete/activities?${params}`, {
+        headers: { Authorization: `Bearer ${refreshed.access_token}` },
+      });
+      // Store refreshed token for caller to save
+      (response as any)._refreshedToken = refreshed;
+    } catch {
+      // Refresh failed too — throw original error
+    }
+  }
 
   if (!response.ok) {
     const error = await response.text();

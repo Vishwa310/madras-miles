@@ -225,7 +225,7 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
     let allActivities: any[] = [];
     let page = 1;
     while (true) {
-      const batch = await fetchStravaActivities(tokenResult.accessToken, afterTimestamp, page, 50);
+      const batch = await fetchStravaActivities(tokenResult.accessToken, afterTimestamp, page, 50, tokenResult.refreshToken);
       if (!batch || batch.length === 0) break;
       const relevant = batch.filter((a: any) => a.type === 'Walk' || a.type === 'Hike');
       allActivities = allActivities.concat(relevant);
