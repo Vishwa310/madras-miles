@@ -324,25 +324,24 @@ export default function SyncPage() {
         )}
       </div>
 
-      {/* Sync Issues */}
+      {/* Sync Errors */}
       {syncIssues.length > 0 && (
         <div className="bg-mm-bg-card border border-mm-hot/20 rounded-2xl p-6 mb-6">
           <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-mm-hot mb-4 flex items-center gap-2">
-            <span className="icon-sm">warning</span> Players with 0 Activities ({syncIssues.length})
+            <span className="icon-sm">error</span> Sync Errors ({syncIssues.length} players)
           </h3>
-          <p className="text-xs text-mm-text-muted mb-3">These players have no synced activities — they may not have walked yet, or their sync failed.</p>
-          <div className="grid grid-cols-2 gap-2">
+          <p className="text-xs text-mm-text-muted mb-3">These players failed to sync. They likely need to logout and re-login to fix permissions.</p>
+          <div className="space-y-2">
             {syncIssues.map((p: any) => (
-              <div key={p.playerId} className="flex items-center gap-2 px-3 py-2 bg-mm-bg-primary rounded-lg border border-mm-border">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[0.5rem] font-bold text-white flex-shrink-0" style={{ background: p.teamEmblem || '#6B7280' }}>
+              <div key={p.playerId} className="flex items-center gap-3 px-3 py-2.5 bg-mm-bg-primary rounded-lg border border-mm-border">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[0.55rem] font-bold text-white flex-shrink-0" style={{ background: p.teamEmblem || '#6B7280' }}>
                   {p.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium truncate">{p.name}</div>
-                  <div className="text-[0.6rem] text-mm-text-muted">{p.team}</div>
+                  <div className="text-xs font-semibold">{p.name} <span className="text-mm-text-muted font-normal">({p.team})</span></div>
+                  <div className="text-[0.65rem] text-mm-hot mt-0.5 truncate">{p.error}</div>
                 </div>
-                {p.tokenExpired && <span className="text-[0.55rem] text-mm-hot font-semibold">Token expired</span>}
-                {!p.hasToken && <span className="text-[0.55rem] text-mm-hot font-semibold">No token</span>}
+                {p.lastAttempt && <span className="text-[0.6rem] text-mm-text-muted flex-shrink-0">{new Date(p.lastAttempt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
               </div>
             ))}
           </div>

@@ -108,6 +108,8 @@ model Player {
   slot            PlayerSlot   @default(MAIN)
   status          PlayerStatus @default(ACTIVE)
   substitutedAt   DateTime?    @map("substituted_at")
+  lastSyncAt      DateTime?    @map("last_sync_at")
+  lastSyncError   String?      @map("last_sync_error")  // null = success, string = error reason
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
 

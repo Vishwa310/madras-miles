@@ -326,6 +326,9 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
       }
     }
 
+    // Record successful sync
+    await prisma.player.update({ where: { id: player.id }, data: { lastSyncAt: new Date(), lastSyncError: null } });
+
     return res.json({
       player: player.user.name,
       status: 'done',
@@ -337,7 +340,10 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
     });
   } catch (err: any) {
     console.error('Single player sync error:', err);
-    return res.json({ player: req.params.playerId, status: 'error', reason: err.message, activities: 0, accepted: 0, rejected: 0 });
+    // Record sync failure
+    const playerId = req.params.playerId;
+    await prisma.player.update({ where: { id: playerId }, data: { lastSyncAt: new Date(), lastSyncError: err.message } }).catch(() => {});
+    return res.json({ player: playerId, status: 'error', reason: err.message, activities: 0, accepted: 0, rejected: 0 });
   }
 });
 
@@ -673,24 +679,23 @@ syncRouter.get('/history', authorize('ADMIN'), async (_req: Request, res: Respon
 syncRouter.get('/issues', authorize('ADMIN'), async (_req: Request, res: Response) => {
   try {
     const players = await prisma.player.findMany({
+      where: { lastSyncError: { not: null } },
       include: {
-        user: { select: { name: true, stravaAthleteId: true, stravaAccessToken: true, tokenExpiresAt: true } },
+        user: { select: { name: true, stravaAthleteId: true } },
         team: { select: { name: true, emblem: true } },
-        _count: { select: { activities: true } },
       },
+      orderBy: { lastSyncAt: 'desc' },
     });
 
-    const issues = players
-      .filter(p => p._count.activities === 0)
-      .map(p => ({
-        playerId: p.id,
-        name: p.user.name,
-        stravaId: p.user.stravaAthleteId,
-        team: p.team.name,
-        teamEmblem: p.team.emblem,
-        hasToken: !!p.user.stravaAccessToken,
-        tokenExpired: p.user.tokenExpiresAt ? new Date(p.user.tokenExpiresAt) < new Date() : true,
-      }));
+    const issues = players.map(p => ({
+      playerId: p.id,
+      name: p.user.name,
+      stravaId: p.user.stravaAthleteId,
+      team: p.team.name,
+      teamEmblem: p.team.emblem,
+      error: p.lastSyncError,
+      lastAttempt: p.lastSyncAt,
+    }));
 
     return res.json({ issues, total: issues.length });
   } catch (err) {
