@@ -174,16 +174,21 @@ activitiesRouter.post('/:id/reject', authorize('ADMIN'), async (req: Request, re
  * List activities needing attention (rejected + flagged, not dismissed)
  * Admin only
  */
-activitiesRouter.get('/attention', authorize('ADMIN'), async (_req: Request, res: Response) => {
+activitiesRouter.get('/attention', authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
+    const includeDismissed = req.query.includeDismissed === 'true';
+    const where: any = {
+      OR: [
+        { status: 'REJECTED' },
+        { flagReason: { not: null } },
+      ],
+    };
+    if (!includeDismissed) {
+      where.dismissed = false;
+    }
+
     const activities = await prisma.activity.findMany({
-      where: {
-        dismissed: false,
-        OR: [
-          { status: 'REJECTED' },
-          { flagReason: { not: null } },
-        ],
-      },
+      where,
       include: {
         player: {
           include: {
