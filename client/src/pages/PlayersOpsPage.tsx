@@ -85,7 +85,10 @@ export default function PlayersOpsPage() {
 
       for (const a of pActs) {
         const actDate = new Date(a.startDate);
-        const diffDays = Math.floor((actDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        // Use local date (IST) for day calculation
+        const actLocal = actDate.toLocaleDateString('en-CA'); // YYYY-MM-DD in IST
+        const startLocal = startDate.toLocaleDateString('en-CA');
+        const diffDays = Math.floor((new Date(actLocal).getTime() - new Date(startLocal).getTime()) / (1000 * 60 * 60 * 24));
         const weekIdx = Math.min(Math.floor(diffDays / 7), totalWeeks - 1);
         if (weekIdx >= 0) {
           const km = (a.creditedMeters || a.distanceMeters || 0) / 1000;
