@@ -304,18 +304,20 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
       const { fetchAndValidateSplits } = await import('../services/validation');
       const recentActivities = await prisma.activity.findMany({
         where: { playerId: player.id, status: 'ACCEPTED', syncedAt: { gte: new Date(Date.now() - 60000) } },
-        select: { id: true, stravaActivityId: true, creditedMeters: true },
+        select: { id: true, stravaActivityId: true, creditedMeters: true, distanceMeters: true },
       });
 
       for (const act of recentActivities) {
         try {
           const { splits, flagReason: splitFlag } = await fetchAndValidateSplits(act.stravaActivityId, tokenResult.accessToken);
 
-          // Count violated splits and deduct from credited distance
+          // Count violated splits — deduct from RAW distance, then apply daily cap
           const violatedKms = splits.filter(s => s.status !== 'ok').length;
           let newCredited = act.creditedMeters || 0;
           if (violatedKms > 0) {
-            newCredited = Math.max(0, newCredited - (violatedKms * 1000));
+            const rawAfterDeduction = Math.max(0, act.distanceMeters - (violatedKms * 1000));
+            const maxDaily = 7000; // 7km cap
+            newCredited = Math.min(rawAfterDeduction, maxDaily);
           }
 
           const flagMsg = splitFlag
@@ -452,11 +454,13 @@ syncRouter.post('/split-pace/:activityId/analyze', authorize('ADMIN'), async (re
       return res.json({ status: 'no_data', reason: 'No stream data available', splits: [] });
     }
 
-    // Count violated splits and deduct from credited distance
+    // Count violated splits — deduct from RAW distance, then apply daily cap
     const violatedKms = splits.filter(s => s.status !== 'ok').length;
     let newCredited = activity.creditedMeters || activity.distanceMeters || 0;
     if (violatedKms > 0) {
-      newCredited = Math.max(0, newCredited - (violatedKms * 1000));
+      const rawAfterDeduction = Math.max(0, activity.distanceMeters - (violatedKms * 1000));
+      const maxDaily = 7000;
+      newCredited = Math.min(rawAfterDeduction, maxDaily);
     }
 
     const flagMsg = flagReason
