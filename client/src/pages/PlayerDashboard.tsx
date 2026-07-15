@@ -308,22 +308,38 @@ export default function PlayerDashboard() {
         <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-mm-text-muted mb-4">Recent Activities</h3>
         <div className="space-y-1">
           {activities.slice(0, 10).map(a => (
-            <div key={a.id} className="flex items-center gap-4 py-3 px-3 rounded-lg hover:bg-mm-bg-primary/50 transition">
-              <span className={`icon ${a.status === 'ACCEPTED' ? 'text-mm-teal' : a.status === 'REJECTED' ? 'text-mm-hot' : 'text-mm-gold'}`}>
-                {a.status === 'ACCEPTED' ? 'check_circle' : a.status === 'REJECTED' ? 'cancel' : 'warning'}
-              </span>
-              <div className="flex-1">
-                <div className="text-sm">{(a.distanceMeters / 1000).toFixed(2)} km · {(a.avgSpeed * 3.6).toFixed(1)} km/h</div>
-                <div className="text-xs text-mm-text-muted">{new Date(a.startDate).toLocaleDateString()}</div>
+            <div key={a.id} className="py-3 px-3 rounded-lg hover:bg-mm-bg-primary/50 transition">
+              <div className="flex items-center gap-4">
+                <span className={`icon ${a.status === 'ACCEPTED' ? 'text-mm-teal' : a.status === 'REJECTED' ? 'text-mm-hot' : 'text-mm-gold'}`}>
+                  {a.status === 'ACCEPTED' ? 'check_circle' : a.status === 'REJECTED' ? 'cancel' : 'warning'}
+                </span>
+                <div className="flex-1">
+                  <div className="text-sm">{(a.distanceMeters / 1000).toFixed(2)} km · {(a.avgSpeed * 3.6).toFixed(1)} km/h</div>
+                  <div className="text-xs text-mm-text-muted">{new Date(a.startDate).toLocaleDateString()}</div>
+                </div>
+                {a.rejectionReason && (
+                  <span className="text-xs text-mm-hot max-w-[250px] truncate">{a.rejectionReason}</span>
+                )}
+                <span className={`px-2 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase border ${
+                  a.status === 'ACCEPTED' ? 'bg-mm-teal/15 text-mm-teal border-mm-teal/30' :
+                  a.status === 'REJECTED' ? 'bg-mm-hot/15 text-mm-hot border-mm-hot/30' :
+                  'bg-mm-gold/15 text-mm-gold border-mm-gold/30'
+                }`}>{a.status}</span>
               </div>
-              {a.rejectionReason && (
-                <span className="text-xs text-mm-hot max-w-[250px] truncate">{a.rejectionReason}</span>
+              {/* Per-km split pace */}
+              {a.splitData && a.splitData.length > 0 && (
+                <div className="mt-2 ml-10 flex flex-wrap gap-1.5">
+                  {a.splitData.map((s: any, i: number) => (
+                    <span key={i} className={`px-2 py-0.5 rounded text-[0.65rem] font-mono font-semibold border ${
+                      s.status === 'ok' ? 'bg-mm-teal/10 text-mm-teal border-mm-teal/20' :
+                      s.status === 'fast' ? 'bg-mm-hot/10 text-mm-hot border-mm-hot/20' :
+                      'bg-mm-gold/10 text-mm-gold border-mm-gold/20'
+                    }`}>
+                      Km{s.km}: {s.pace}
+                    </span>
+                  ))}
+                </div>
               )}
-              <span className={`px-2 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase border ${
-                a.status === 'ACCEPTED' ? 'bg-mm-teal/15 text-mm-teal border-mm-teal/30' :
-                a.status === 'REJECTED' ? 'bg-mm-hot/15 text-mm-hot border-mm-hot/30' :
-                'bg-mm-gold/15 text-mm-gold border-mm-gold/30'
-              }`}>{a.status}</span>
             </div>
           ))}
           {activities.length === 0 && <p className="text-center text-mm-text-muted py-6">No activities yet. Sync to fetch from Strava.</p>}
