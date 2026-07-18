@@ -98,7 +98,7 @@ challengeRouter.put('/:id', authorize('ADMIN'), async (req: Request, res: Respon
     minPaceMinPerKm, maxPaceMinPerKm,
     maxPlayersWeek1, maxPlayersWeek2, maxPlayersWeek3, maxPlayersWeek4,
     useConstantRoster, minFemalePerWeek,
-    maxSubstitutions, maleCanReturn, femaleCanReturn, maxReturns, subCreditsPerTeam,
+    subCreditsPerTeam,
     isActive,
   } = req.body;
 
@@ -126,10 +126,6 @@ challengeRouter.put('/:id', authorize('ADMIN'), async (req: Request, res: Respon
         ...(maxPlayersWeek4 !== undefined && { maxPlayersWeek4 }),
         ...(useConstantRoster !== undefined && { useConstantRoster }),
         ...(minFemalePerWeek !== undefined && { minFemalePerWeek }),
-        ...(maxSubstitutions !== undefined && { maxSubstitutions }),
-        ...(maleCanReturn !== undefined && { maleCanReturn }),
-        ...(femaleCanReturn !== undefined && { femaleCanReturn }),
-        ...(maxReturns !== undefined && { maxReturns }),
         ...(subCreditsPerTeam !== undefined && { subCreditsPerTeam }),
         ...(isActive !== undefined && { isActive }),
         ...((req.body.hideActivitiesFromPlayers !== undefined) && { hideActivitiesFromPlayers: req.body.hideActivitiesFromPlayers }),

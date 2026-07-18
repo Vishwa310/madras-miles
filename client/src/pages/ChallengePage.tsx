@@ -17,7 +17,6 @@ export default function ChallengePage() {
     maxPlayersWeek4: 15,
     useConstantRoster: false,
     minFemalePerWeek: 3,
-    maxSubstitutions: 5,
     subCreditsPerTeam: 8,
     hideActivitiesFromPlayers: false,
   });
@@ -43,7 +42,6 @@ export default function ChallengePage() {
         maxPlayersWeek4: data.config.maxPlayersWeek4 ?? 15,
         useConstantRoster: data.config.useConstantRoster ?? false,
         minFemalePerWeek: data.config.minFemalePerWeek ?? 3,
-        maxSubstitutions: data.config.maxSubstitutions ?? 5,
         subCreditsPerTeam: data.config.subCreditsPerTeam ?? 8,
         hideActivitiesFromPlayers: data.config.hideActivitiesFromPlayers ?? false,
       });
