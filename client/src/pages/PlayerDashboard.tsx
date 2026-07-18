@@ -151,7 +151,7 @@ export default function PlayerDashboard() {
       </div>
 
       {/* No team banner */}
-      {!user.player?.team && (
+      {!user.player?.team && !challenge?.hideActivitiesFromPlayers && (
         <div className="mb-8 px-6 py-5 bg-mm-gold/5 border border-mm-gold/20 rounded-2xl flex items-center gap-4">
           <span className="icon text-mm-gold" style={{ fontSize: '28px' }}>info</span>
           <div>
@@ -162,9 +162,25 @@ export default function PlayerDashboard() {
       )}
 
       {/* Activity content — with frosted overlay when hidden by admin */}
-      <div className="relative">
-        {challenge?.hideActivitiesFromPlayers && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center backdrop-blur-md bg-mm-bg-primary/60 rounded-2xl">
+      {challenge?.hideActivitiesFromPlayers ? (
+        <div className="relative min-h-[400px] bg-mm-bg-card border border-mm-border rounded-2xl overflow-hidden">
+          {/* Skeleton background */}
+          <div className="p-6 opacity-20">
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="h-24 bg-mm-bg-elevated rounded-xl"></div>
+              <div className="h-24 bg-mm-bg-elevated rounded-xl"></div>
+              <div className="h-24 bg-mm-bg-elevated rounded-xl"></div>
+            </div>
+            <div className="h-40 bg-mm-bg-elevated rounded-xl mb-6"></div>
+            <div className="space-y-3">
+              <div className="h-12 bg-mm-bg-elevated rounded-lg"></div>
+              <div className="h-12 bg-mm-bg-elevated rounded-lg"></div>
+              <div className="h-12 bg-mm-bg-elevated rounded-lg"></div>
+              <div className="h-12 bg-mm-bg-elevated rounded-lg"></div>
+            </div>
+          </div>
+          {/* Frosted overlay */}
+          <div className="absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm bg-mm-bg-primary/40">
             <div className="text-center max-w-md px-8 py-10">
               <span className="icon text-mm-orange block mb-4" style={{ fontSize: '56px' }}>visibility_off</span>
               <h2 className="font-display text-2xl font-bold mb-3">Nice try, detective 🕵️</h2>
@@ -179,7 +195,9 @@ export default function PlayerDashboard() {
               </div>
             </div>
           </div>
-        )}
+        </div>
+      ) : (
+      <div className="relative">
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4 mb-8">
@@ -371,7 +389,8 @@ export default function PlayerDashboard() {
           </div>
         </div>
       )}
-      </div>{/* end relative wrapper */}
+      </div>
+      )}
     </div>
   );
 }
