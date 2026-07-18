@@ -181,17 +181,17 @@ export default function PlayerDashboard() {
           </div>
           {/* Frosted overlay */}
           <div className="absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm bg-mm-bg-primary/40">
-            <div className="text-center max-w-md px-8 py-10">
+            <div className="text-center max-w-lg px-8 py-10">
               <span className="icon text-mm-orange block mb-4" style={{ fontSize: '56px' }}>visibility_off</span>
-              <h2 className="font-display text-2xl font-bold mb-3">Nice try, detective 🕵️</h2>
-              <p className="text-mm-text-secondary leading-relaxed">
-                This section is on a chai break ☕ — the admin hid it because some of you kept refreshing every 5 minutes like it's a cricket score.
+              <h2 className="font-mono text-2xl font-bold mb-4 uppercase tracking-wide">Hold your horses</h2>
+              <p className="font-mono text-sm text-mm-text-secondary leading-relaxed">
+                We hid your stats because some of you treat this page like a stock ticker. It's a walkathon, not the NSE.
               </p>
-              <p className="text-mm-text-secondary mt-3 leading-relaxed">
-                Relax — your walks are being counted. We promise. Now go touch some grass... oh wait, you already did that this morning. 🌿
+              <p className="font-mono text-sm text-mm-text-secondary mt-4 leading-relaxed">
+                Your km are safe. Our sanity wasn't — so the admin pressed the "everybody calm down" button.
               </p>
-              <div className="mt-6 px-4 py-2 bg-mm-orange/10 border border-mm-orange/20 rounded-xl">
-                <p className="text-xs text-mm-orange font-semibold">Pro tip: Refreshing won't make it sync faster. Patience, grasshopper. 🦗</p>
+              <div className="mt-6 px-4 py-3 bg-mm-bg-card border border-mm-border rounded-xl">
+                <p className="font-mono text-xs text-mm-text-muted">The data will be back when the admin decides you've learned patience. Which, at this rate, might take a while.</p>
               </div>
             </div>
           </div>
