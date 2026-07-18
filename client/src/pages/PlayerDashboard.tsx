@@ -165,7 +165,7 @@ export default function PlayerDashboard() {
       {challenge?.hideActivitiesFromPlayers ? (
         <div className="relative min-h-[400px] bg-mm-bg-card border border-mm-border rounded-2xl overflow-hidden">
           {/* Skeleton background */}
-          <div className="p-6 opacity-20">
+          <div className="p-6 opacity-40">
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="h-24 bg-mm-bg-elevated rounded-xl"></div>
               <div className="h-24 bg-mm-bg-elevated rounded-xl"></div>
@@ -180,8 +180,8 @@ export default function PlayerDashboard() {
             </div>
           </div>
           {/* Frosted overlay */}
-          <div className="absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm bg-mm-bg-primary/40">
-            <div className="text-center max-w-lg px-8 py-10">
+          <div className="absolute inset-0 z-30 flex items-center justify-center backdrop-blur-[2px] bg-mm-bg-primary/20">
+            <div className="text-center max-w-2xl px-10 py-10">
               <span className="icon text-mm-orange block mb-4" style={{ fontSize: '56px' }}>visibility_off</span>
               <h2 className="font-mono text-2xl font-bold mb-4 uppercase tracking-wide">Hold your horses</h2>
               <p className="font-mono text-sm text-mm-text-secondary leading-relaxed">
