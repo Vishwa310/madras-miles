@@ -1,5 +1,6 @@
 import { PageLoader } from '../lib/loaders';
 import { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { api } from '../lib/api';
 
 const PLAYER_QUOTES = [
@@ -18,6 +19,7 @@ const PLAYER_QUOTES = [
 ];
 
 export default function PlayerDashboard() {
+  const { viewAs: _viewAs } = useOutletContext<{ user?: any; viewAs?: string }>() || {};
   const [user, setUser] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [scores, setScores] = useState<any>(null);
