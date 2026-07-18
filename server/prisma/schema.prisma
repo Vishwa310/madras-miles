@@ -277,6 +277,7 @@ model ChallengeConfig {
   subCreditsPerTeam        Int      @default(8) @map("sub_credits_per_team") // total swap credits per team
 
   isActive                 Boolean  @default(true) @map("is_active")
+  hideActivitiesFromPlayers Boolean @default(false) @map("hide_activities_from_players")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @updatedAt @map("updated_at")
 

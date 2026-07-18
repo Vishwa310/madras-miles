@@ -132,6 +132,7 @@ challengeRouter.put('/:id', authorize('ADMIN'), async (req: Request, res: Respon
         ...(maxReturns !== undefined && { maxReturns }),
         ...(subCreditsPerTeam !== undefined && { subCreditsPerTeam }),
         ...(isActive !== undefined && { isActive }),
+        ...((req.body.hideActivitiesFromPlayers !== undefined) && { hideActivitiesFromPlayers: req.body.hideActivitiesFromPlayers }),
       },
     });
 

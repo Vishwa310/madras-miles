@@ -19,6 +19,7 @@ export default function ChallengePage() {
     minFemalePerWeek: 3,
     maxSubstitutions: 5,
     subCreditsPerTeam: 8,
+    hideActivitiesFromPlayers: false,
   });
   const [saving, setSaving] = useState(false);
 
@@ -44,6 +45,7 @@ export default function ChallengePage() {
         minFemalePerWeek: data.config.minFemalePerWeek ?? 3,
         maxSubstitutions: data.config.maxSubstitutions ?? 5,
         subCreditsPerTeam: data.config.subCreditsPerTeam ?? 8,
+        hideActivitiesFromPlayers: data.config.hideActivitiesFromPlayers ?? false,
       });
     }
   }
@@ -170,6 +172,23 @@ export default function ChallengePage() {
         <Section title="Rest Day (auto-enforced)" icon="hotel">
           <div className="p-4 bg-mm-bg-primary rounded-lg border border-mm-border">
             <p className="text-xs text-mm-text-muted">1 mandatory rest day per calendar week. Weeks are defined from challenge start date in 7-day blocks (last week may be shorter). If a player walks every available day in a week, the last activity is rejected as rest day.</p>
+          </div>
+        </Section>
+
+        {/* Player Visibility */}
+        <Section title="Player Dashboard Visibility" icon="visibility">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold">Show activities to players</p>
+              <p className="text-xs text-mm-text-muted mt-1">When OFF, players see a frosted overlay instead of their activities. Use this to stop them from refreshing every 5 minutes.</p>
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <span className="text-xs text-mm-text-muted">{form.hideActivitiesFromPlayers ? 'Hidden' : 'Visible'}</span>
+              <div className="relative" onClick={() => setForm({...form, hideActivitiesFromPlayers: !form.hideActivitiesFromPlayers})}>
+                <div className={`w-11 h-6 rounded-full transition-colors ${!form.hideActivitiesFromPlayers ? 'bg-mm-teal' : 'bg-mm-hot/60'}`} />
+                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${!form.hideActivitiesFromPlayers ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+              </div>
+            </label>
           </div>
         </Section>
 
