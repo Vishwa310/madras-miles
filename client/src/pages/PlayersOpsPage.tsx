@@ -231,14 +231,14 @@ export default function PlayersOpsPage() {
 
   // Open sub modal
   function openSubModal(player: PlayerRow) {
-    // Show standby players + retired females (who can return) from the same team
+    // Show all standby players from the same team (any player can return)
     const availSubs = players.filter(p =>
       p.teamId === player.teamId &&
       p.id !== player.id &&
-      (p.status === 'STANDBY' || (p.status === 'RETIRED' && p.gender === 'FEMALE'))
+      p.status === 'STANDBY'
     );
     setSubModal({ player, subs: availSubs });
-    setSubForm({ substituteId: '', notes: '', effectiveDate: new Date().toISOString().split('T')[0] });
+    setSubForm({ substituteId: '', notes: '', effectiveDate: new Date().toLocaleDateString('en-CA') });
   }
 
   async function executeSub() {

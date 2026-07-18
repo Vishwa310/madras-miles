@@ -46,7 +46,7 @@ export default function SubstitutionsPage() {
 
   // Available subs for selected player's team
   const availableSubs = selectedPlayer
-    ? players.filter(p => p.teamId === selectedPlayer.teamId && (p.status === 'STANDBY' || (p.status === 'RETIRED' && p.gender === 'FEMALE')))
+    ? players.filter(p => p.teamId === selectedPlayer.teamId && p.status === 'STANDBY')
     : [];
 
   // Filtered history
