@@ -96,18 +96,18 @@ export async function validateActivity(
       startDate: { gte: dayStart, lte: dayEnd },
       status: 'ACCEPTED',
     },
-    _sum: { distanceMeters: true },
+    _sum: { creditedMeters: true },
   });
 
-  const dailyKmSoFar = (dailyDistanceResult._sum.distanceMeters || 0) / 1000;
-  const maxDailyKm = challenge.maxDailyKm || 7;
+  const dailyMetersSoFar = dailyDistanceResult._sum.creditedMeters || 0;
+  const maxDailyMeters = (challenge.maxDailyKm || 7) * 1000;
 
-  if (dailyKmSoFar >= maxDailyKm * 1000) {
+  if (dailyMetersSoFar >= maxDailyMeters) {
     // Already at cap — still accept but with 0 credited distance
     return { status: 'ACCEPTED', reason: 'Daily cap reached — 0 km credited', cappedDistanceMeters: 0 };
   }
 
-  const remainingMeters = (maxDailyKm * 1000) - (dailyDistanceResult._sum.distanceMeters || 0);
+  const remainingMeters = maxDailyMeters - dailyMetersSoFar;
   if (distanceMeters > remainingMeters) {
     // Partial credit
     return { status: 'ACCEPTED', reason: `Capped to ${(remainingMeters / 1000).toFixed(2)} km (daily limit)`, cappedDistanceMeters: remainingMeters };
