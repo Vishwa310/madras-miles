@@ -103,8 +103,8 @@ export async function validateActivity(
   const maxDailyMeters = (challenge.maxDailyKm || 7) * 1000;
 
   if (dailyMetersSoFar >= maxDailyMeters) {
-    // Already at cap — still accept but with 0 credited distance
-    return { status: 'ACCEPTED', reason: 'Daily cap reached — 0 km credited', cappedDistanceMeters: 0 };
+    // Already at cap — reject since 0 km would be credited
+    return reject('Daily cap already reached — no additional km can be credited today');
   }
 
   const remainingMeters = maxDailyMeters - dailyMetersSoFar;
