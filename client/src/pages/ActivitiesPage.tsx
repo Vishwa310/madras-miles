@@ -14,49 +14,49 @@ interface WeekGroup {
   rejected: number;
 }
 
-function getWeekLabel(date: Date): string {
-  const now = new Date();
-  const startOfThisWeek = new Date(now);
-  startOfThisWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Monday
-  startOfThisWeek.setHours(0, 0, 0, 0);
-
-  const startOfLastWeek = new Date(startOfThisWeek);
-  startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
-
-  if (date >= startOfThisWeek) return 'This Week';
-  if (date >= startOfLastWeek) return 'Last Week';
-
-  // Get the Monday of that week
-  const monday = new Date(date);
-  monday.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-
-  const fmt = (d: Date) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-  return `${fmt(monday)} – ${fmt(sunday)}`;
-}
-
-function getWeekKey(date: Date): string {
-  const monday = new Date(date);
-  monday.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-  monday.setHours(0, 0, 0, 0);
-  return monday.toLocaleDateString('en-CA');
-}
-
-function groupByWeek(activities: any[]): WeekGroup[] {
+function groupByWeek(activities: any[], challengeStartDate?: string): WeekGroup[] {
   const groups = new Map<string, WeekGroup>();
+  const chalStart = challengeStartDate ? new Date(challengeStartDate) : null;
 
   for (const a of activities) {
     const date = new Date(a.startDate);
-    const key = getWeekKey(date);
+    let key: string;
+    let label: string;
+    let weekStart: Date;
 
-    if (!groups.has(key)) {
+    if (chalStart) {
+      // Challenge-based weeks: W1, W2, W3, W4
+      const localDate = new Date(date.toLocaleDateString('en-CA'));
+      const localStart = new Date(chalStart.toLocaleDateString('en-CA'));
+      const diffDays = Math.floor((localDate.getTime() - localStart.getTime()) / (1000 * 60 * 60 * 24));
+      const weekNum = Math.min(Math.floor(diffDays / 7) + 1, 4);
+      key = `W${weekNum}`;
+
+      const wStart = new Date(localStart);
+      wStart.setDate(wStart.getDate() + (weekNum - 1) * 7);
+      const wEnd = new Date(wStart);
+      wEnd.setDate(wEnd.getDate() + (weekNum === 4 ? 2 : 6)); // W4 is only 3 days
+
+      const fmt = (d: Date) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      label = `Week ${weekNum} (${fmt(wStart)} – ${fmt(wEnd)})`;
+      weekStart = wStart;
+    } else {
+      // Fallback: calendar Monday-based
       const monday = new Date(date);
       monday.setDate(date.getDate() - ((date.getDay() + 6) % 7));
       monday.setHours(0, 0, 0, 0);
+      key = monday.toLocaleDateString('en-CA');
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const fmt = (d: Date) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      label = `${fmt(monday)} – ${fmt(sunday)}`;
+      weekStart = monday;
+    }
+
+    if (!groups.has(key)) {
       groups.set(key, {
-        label: getWeekLabel(date),
-        startDate: monday,
+        label,
+        startDate: weekStart,
         activities: [],
         totalKm: 0,
         accepted: 0,
@@ -73,7 +73,7 @@ function groupByWeek(activities: any[]): WeekGroup[] {
     if (a.status === 'REJECTED') group.rejected++;
   }
 
-  return Array.from(groups.values()).sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
+  return Array.from(groups.values()).sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 }
 
 export default function ActivitiesPage() {
@@ -149,7 +149,7 @@ export default function ActivitiesPage() {
     );
   }
 
-  const weeks = groupByWeek(isAdmin ? activities : activities.filter(a => a.status !== 'FLAGGED'));
+  const weeks = groupByWeek(isAdmin ? activities : activities.filter(a => a.status !== 'FLAGGED'), challenge?.startDate);
 
   return (
     <div>
