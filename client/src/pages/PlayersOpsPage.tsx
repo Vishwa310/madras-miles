@@ -806,11 +806,7 @@ export default function PlayersOpsPage() {
                     {result && result.splits.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {result.splits.map((s, i) => (
-                          <span key={i} className={`px-2 py-0.5 rounded text-[0.65rem] font-mono font-semibold border ${
-                            s.status === 'ok' ? 'bg-mm-teal/10 text-mm-teal border-mm-teal/20' :
-                            s.status === 'fast' ? 'bg-mm-hot/10 text-mm-hot border-mm-hot/20' :
-                            'bg-mm-gold/10 text-mm-gold border-mm-gold/20'
-                          }`}>
+                          <span key={i} className="px-2 py-0.5 rounded text-[0.65rem] font-mono font-semibold border bg-mm-bg-elevated text-mm-text-secondary border-mm-border">
                             Km{s.km}: {s.pace}
                           </span>
                         ))}
