@@ -83,6 +83,7 @@ export default function ActivitiesPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [challenge, setChallenge] = useState<any>(null);
 
   useEffect(() => { setPage(1); }, [filter]);
   useEffect(() => { loadActivities(); }, [filter, page]);
@@ -91,10 +92,14 @@ export default function ActivitiesPage() {
     const offset = (page - 1) * PAGE_SIZE;
     const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
     if (filter) params.set('status', filter);
-    const data = await api.get(`/activities?${params}`);
-    setActivities(data.activities || []);
+    const [actData, chalData] = await Promise.all([
+      api.get(`/activities?${params}`),
+      api.get('/challenge'),
+    ]);
+    setActivities(actData.activities || []);
+    setChallenge(chalData.config);
     setLoading(false);
-    setTotal(data.total ?? data.activities?.length ?? 0);
+    setTotal(actData.total ?? actData.activities?.length ?? 0);
   }
 
   async function approveActivity(id: string) {
@@ -110,6 +115,40 @@ export default function ActivitiesPage() {
   if (loading) return <PageLoader />;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const isAdmin = user?.role === 'ADMIN' && viewAs !== 'PLAYER';
+
+  // Block activities view for players when admin has hidden it
+  if (challenge?.hideActivitiesFromPlayers && !isAdmin) {
+    return (
+      <div className="relative min-h-[400px] bg-mm-bg-card border border-mm-border rounded-2xl overflow-hidden">
+        <div className="p-6 opacity-40">
+          <div className="h-8 w-48 bg-mm-bg-elevated rounded-lg mb-6"></div>
+          <div className="space-y-3">
+            <div className="h-16 bg-mm-bg-elevated rounded-lg"></div>
+            <div className="h-16 bg-mm-bg-elevated rounded-lg"></div>
+            <div className="h-16 bg-mm-bg-elevated rounded-lg"></div>
+            <div className="h-16 bg-mm-bg-elevated rounded-lg"></div>
+            <div className="h-16 bg-mm-bg-elevated rounded-lg"></div>
+          </div>
+        </div>
+        <div className="absolute inset-0 z-30 flex items-center justify-center backdrop-blur-[2px] bg-mm-bg-primary/20">
+          <div className="text-center max-w-2xl px-10 py-10">
+            <span className="icon text-mm-orange block mb-4" style={{ fontSize: '56px' }}>visibility_off</span>
+            <h2 className="font-mono text-2xl font-bold mb-4 uppercase tracking-wide">Hold your horses</h2>
+            <p className="font-mono text-sm text-mm-text-secondary leading-relaxed">
+              We hid your stats because some of you treat this page like a stock ticker. It's a walkathon, not the NSE.
+            </p>
+            <p className="font-mono text-sm text-mm-text-secondary mt-4 leading-relaxed">
+              Your km are safe. Our sanity wasn't — so the admin pressed the "everybody calm down" button.
+            </p>
+            <div className="mt-6 px-4 py-3 bg-mm-bg-card border border-mm-border rounded-xl">
+              <p className="font-mono text-xs text-mm-text-muted">The data will be back when the admin decides you've learned patience. Which, at this rate, might take a while.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const weeks = groupByWeek(isAdmin ? activities : activities.filter(a => a.status !== 'FLAGGED'));
 
   return (
