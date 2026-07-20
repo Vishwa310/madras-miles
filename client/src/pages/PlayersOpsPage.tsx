@@ -182,6 +182,7 @@ export default function PlayersOpsPage() {
     setSyncProgress(prev => ({ ...prev, currentPlayer: 'Done!', done: true }));
     await loadData();
     setSyncing(false);
+    setSelected(new Set());
   }
 
   function syncSelected() {
