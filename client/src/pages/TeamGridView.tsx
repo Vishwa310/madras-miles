@@ -169,9 +169,10 @@ export default function TeamGridView() {
                   const dayName = d.toLocaleDateString('en', { weekday: 'short' });
                   const dayNum = d.getDate();
                   const isToday = date === new Date().toLocaleDateString('en-CA');
-                  const isMonday = d.getDay() === 1;
+                  const chalStart = challenge?.startDate ? new Date(challenge.startDate).toLocaleDateString('en-CA') : null;
+                  const isWeekBoundary = chalStart ? ((new Date(date).getTime() - new Date(chalStart).getTime()) / (1000*60*60*24)) % 7 === 0 && date !== chalStart : d.getDay() === 1;
                   return (
-                    <th key={date} className={`px-1 py-3 text-center text-[0.6rem] uppercase tracking-wider border-b border-mm-border min-w-[44px] ${isToday ? 'text-mm-orange' : 'text-mm-text-muted'} ${isMonday ? 'border-l-2 border-l-mm-orange/30' : ''}`}>
+                    <th key={date} className={`px-1 py-3 text-center text-[0.6rem] uppercase tracking-wider border-b border-mm-border min-w-[44px] ${isToday ? 'text-mm-orange' : 'text-mm-text-muted'} ${isWeekBoundary ? 'border-l-2 border-l-mm-orange/30' : ''}`}>
                       <div>{dayName}</div>
                       <div className={`font-display text-sm font-bold ${isToday ? 'text-mm-orange' : 'text-mm-text-secondary'}`}>{dayNum}</div>
                     </th>
@@ -209,7 +210,10 @@ export default function TeamGridView() {
                     {/* Day cells */}
                     {visibleDates.map(date => {
                       const cell = dayMap?.get(date);
-                      const isMonday = new Date(date).getDay() === 1;
+                      const isMonday = (() => {
+                        const chalStart = challenge?.startDate ? new Date(challenge.startDate).toLocaleDateString('en-CA') : null;
+                        return chalStart ? ((new Date(date).getTime() - new Date(chalStart).getTime()) / (1000*60*60*24)) % 7 === 0 && date !== chalStart : new Date(date).getDay() === 1;
+                      })();
                       const mondayBorder = isMonday ? 'border-l-2 border-l-mm-orange/30' : '';
 
                       if (!cell || cell.activities.length === 0) {
