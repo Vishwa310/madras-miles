@@ -296,51 +296,6 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
     if (fraudFlagged > 0) {
     }
 
-    // Tier 2 auto split pace check — only for newly synced activities (not backlog)
-    let splitFlagged = 0;
-    const newAccepted = allActivities.length - skipped;
-    if (newAccepted > 0 && newAccepted <= 50) {
-      // Get newly accepted activities for this player
-      const { fetchAndValidateSplits } = await import('../services/validation');
-      const recentActivities = await prisma.activity.findMany({
-        where: { playerId: player.id, status: 'ACCEPTED', syncedAt: { gte: new Date(Date.now() - 60000) } },
-        select: { id: true, stravaActivityId: true, creditedMeters: true, distanceMeters: true },
-      });
-
-      for (const act of recentActivities) {
-        try {
-          const { splits, flagReason: splitFlag } = await fetchAndValidateSplits(act.stravaActivityId, tokenResult.accessToken);
-
-          // Count violated splits — deduct from RAW distance, then apply daily cap
-          const violatedKms = splits.filter(s => s.status !== 'ok').length;
-          let newCredited = act.creditedMeters || 0;
-          if (violatedKms > 0) {
-            const rawAfterDeduction = Math.max(0, act.distanceMeters - (violatedKms * 1000));
-            const maxDaily = 7000; // 7km cap
-            newCredited = Math.min(rawAfterDeduction, maxDaily);
-          }
-
-          const flagMsg = splitFlag
-            ? `${splitFlag} — ${violatedKms} km deducted (credited: ${(newCredited / 1000).toFixed(2)} km)`
-            : undefined;
-
-          await prisma.activity.update({
-            where: { id: act.id },
-            data: {
-              splitData: splits.length > 0 ? splits : undefined,
-              ...(violatedKms > 0 && { creditedMeters: newCredited }),
-              ...(flagMsg && { flagReason: flagMsg }),
-            },
-          });
-          if (flagMsg) splitFlagged++;
-          // Small delay to respect Strava rate limits
-          await new Promise(r => setTimeout(r, 500));
-        } catch {
-          // Skip split check on error — don't block sync
-        }
-      }
-    }
-
     // Record successful sync
     await prisma.player.update({ where: { id: player.id }, data: { lastSyncAt: new Date(), lastSyncError: null } });
 
@@ -351,7 +306,7 @@ syncRouter.post('/player/:playerId', authorize('ADMIN'), async (req: Request, re
       accepted,
       rejected,
       skipped,
-      flagged: fraudFlagged + splitFlagged,
+      flagged: fraudFlagged,
     });
   } catch (err: any) {
     console.error('Single player sync error:', err);
