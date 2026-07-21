@@ -147,12 +147,11 @@ export async function validateActivity(
 
 /**
  * Check if a day should be treated as a rest day.
- * Rule: 1 mandatory rest day per calendar week.
- * Week blocks are defined by challenge start date (7-day blocks, last week may be shorter).
- * If a player has already walked every other day in the week, this day must be rest.
+ * Rule: 1 mandatory rest day per calendar week PER SLOT.
+ * When a sub happens, the incoming player shares the slot's rest day quota.
+ * Counts walking days from all players in the sub chain for that week.
  */
 export async function isRestDay(playerId: string, date: Date): Promise<boolean> {
-  // Get challenge config to determine week boundaries
   const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
   if (!challenge) return false;
 
@@ -165,20 +164,19 @@ export async function isRestDay(playerId: string, date: Date): Promise<boolean> 
   const daysSinceStart = Math.floor((date.getTime() - challengeStart.getTime()) / (1000 * 60 * 60 * 24));
   const weekIndex = Math.floor(daysSinceStart / 7);
 
-  // Calculate this week's start and end
   const weekStart = new Date(challengeStart);
   weekStart.setDate(weekStart.getDate() + weekIndex * 7);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
-  // Cap week end at challenge end
   const effectiveWeekEnd = weekEnd > challengeEnd ? challengeEnd : weekEnd;
 
-  // Count total days in this week
   const totalDaysInWeek = Math.floor((effectiveWeekEnd.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  const maxWalkDays = totalDaysInWeek - 1; // must rest 1 day
+  const maxWalkDays = totalDaysInWeek - 1;
 
-  // Count how many days this player has already walked THIS week (excluding today)
-  // Use IST for date comparison (UTC+5:30)
+  // Get all players in this slot's sub chain (who occupied this position)
+  const slotPlayerIds = await getSlotChain(playerId);
+
+  // Count walking days for ALL players in the slot this week
   const toIST = (d: Date) => new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
   const dateStr = toIST(date).toISOString().split('T')[0];
   const daysWalkedThisWeek: Set<string> = new Set();
@@ -187,16 +185,17 @@ export async function isRestDay(playerId: string, date: Date): Promise<boolean> 
     const checkDate = new Date(weekStart);
     checkDate.setDate(checkDate.getDate() + i);
     const checkStr = toIST(checkDate).toISOString().split('T')[0];
-    if (checkStr === dateStr) continue; // skip today
+    if (checkStr === dateStr) continue;
 
     const dayStart = new Date(checkDate);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(checkDate);
     dayEnd.setHours(23, 59, 59, 999);
 
+    // Check if ANY player in the slot chain walked this day
     const count = await prisma.activity.count({
       where: {
-        playerId,
+        playerId: { in: slotPlayerIds },
         startDate: { gte: dayStart, lte: dayEnd },
         status: 'ACCEPTED',
       },
@@ -205,8 +204,46 @@ export async function isRestDay(playerId: string, date: Date): Promise<boolean> 
     if (count > 0) daysWalkedThisWeek.add(checkStr);
   }
 
-  // If player already used all their walking days, today must be rest
   return daysWalkedThisWeek.size >= maxWalkDays;
+}
+
+/**
+ * Get all player IDs that share the same slot via substitution chain.
+ * Follows the sub log to find who replaced whom.
+ */
+async function getSlotChain(playerId: string): Promise<string[]> {
+  const chain = new Set<string>([playerId]);
+
+  // Find all players connected via substitution log
+  const subLogs = await prisma.substitutionLog.findMany({
+    where: {
+      OR: [
+        { retiredPlayerId: playerId },
+        { substitutePlayerId: playerId },
+      ],
+    },
+  });
+
+  for (const log of subLogs) {
+    chain.add(log.retiredPlayerId);
+    chain.add(log.substitutePlayerId);
+
+    // Follow one more level (in case of A→B→C chain)
+    const deeper = await prisma.substitutionLog.findMany({
+      where: {
+        OR: [
+          { retiredPlayerId: { in: [log.retiredPlayerId, log.substitutePlayerId] } },
+          { substitutePlayerId: { in: [log.retiredPlayerId, log.substitutePlayerId] } },
+        ],
+      },
+    });
+    for (const d of deeper) {
+      chain.add(d.retiredPlayerId);
+      chain.add(d.substitutePlayerId);
+    }
+  }
+
+  return Array.from(chain);
 }
 
 /**
