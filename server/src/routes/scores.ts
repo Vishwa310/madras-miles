@@ -10,9 +10,10 @@ scoresRouter.use(authenticate);
  * GET /api/scores/leaderboard
  * Team leaderboard — ranked by total KM with tiebreakers
  */
-scoresRouter.get('/leaderboard', async (_req: Request, res: Response) => {
+scoresRouter.get('/leaderboard', async (req: Request, res: Response) => {
   try {
-    const leaderboard = await computeTeamRankings();
+    const asOf = req.query.asOf ? new Date(req.query.asOf as string) : undefined;
+    const leaderboard = await computeTeamRankings(asOf);
     return res.json({ leaderboard });
   } catch (err) {
     console.error('Error getting leaderboard:', err);
@@ -26,9 +27,10 @@ scoresRouter.get('/leaderboard', async (_req: Request, res: Response) => {
  * Optional: ?teamId=xxx to filter by team
  */
 scoresRouter.get('/players', async (req: Request, res: Response) => {
-  const { teamId } = req.query;
+  const { teamId, asOf } = req.query;
   try {
-    const rankings = await computePlayerRankings(teamId as string | undefined);
+    const asOfDate = asOf ? new Date(asOf as string) : undefined;
+    const rankings = await computePlayerRankings(teamId as string | undefined, asOfDate);
     return res.json({ rankings });
   } catch (err) {
     console.error('Error getting player rankings:', err);

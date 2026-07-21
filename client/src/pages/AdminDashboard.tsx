@@ -13,16 +13,19 @@ export default function AdminDashboard() {
   const [activities, setActivities] = useState<any[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [asOfDate, setAsOfDate] = useState('');
   const [syncLog, setSyncLog] = useState<{ player: string; status: string; activities?: number; accepted?: number; rejected?: number; reason?: string }[]>([]);
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, currentPlayer: '' });
 
   useEffect(() => { loadData(); }, []);
+  useEffect(() => { if (!loading) loadData(); }, [asOfDate]);
 
   async function loadData() {
+    const asOfParam = asOfDate ? `?asOf=${asOfDate}` : '';
     const [teamsD, lbD, prD, syncD, chalD, actD] = await Promise.all([
       api.get('/teams'),
-      api.get('/scores/leaderboard'),
-      api.get('/scores/players'),
+      api.get(`/scores/leaderboard${asOfParam}`),
+      api.get(`/scores/players${asOfParam}`),
       api.get('/sync/status'),
       api.get('/challenge'),
       api.get('/activities?limit=50'),
@@ -111,12 +114,30 @@ export default function AdminDashboard() {
             {syncStatus ? `Last sync: ${new Date(syncStatus.startedAt).toLocaleString()}` : 'Never synced'}
           </p>
         </div>
-        <button onClick={triggerSync} disabled={syncing}
-          className="flex items-center gap-2 px-5 py-2.5 gradient-hero rounded-full font-display font-semibold text-sm uppercase text-white shadow-lg shadow-mm-orange/30 hover:-translate-y-0.5 transition disabled:opacity-50">
-          <span className={`icon-sm ${syncing ? 'animate-spin' : ''}`}>{syncing ? 'progress_activity' : 'sync'}</span>
-          {syncing ? 'Syncing...' : 'Sync & Score'}
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-2 bg-mm-bg-card border border-mm-border rounded-lg">
+            <span className="icon-sm text-mm-text-muted">calendar_month</span>
+            <span className="text-xs text-mm-text-muted">As of:</span>
+            <input type="date" value={asOfDate} onChange={e => setAsOfDate(e.target.value)}
+              max={new Date().toLocaleDateString('en-CA')}
+              className="bg-transparent text-sm font-semibold outline-none w-32" />
+            {asOfDate && (
+              <button onClick={() => setAsOfDate('')} className="text-xs text-mm-text-muted hover:text-white">✕</button>
+            )}
+          </div>
+          <button onClick={triggerSync} disabled={syncing}
+            className="flex items-center gap-2 px-5 py-2.5 gradient-hero rounded-full font-display font-semibold text-sm uppercase text-white shadow-lg shadow-mm-orange/30 hover:-translate-y-0.5 transition disabled:opacity-50">
+            <span className={`icon-sm ${syncing ? 'animate-spin' : ''}`}>{syncing ? 'progress_activity' : 'sync'}</span>
+            {syncing ? 'Syncing...' : 'Sync & Score'}
+          </button>
+        </div>
       </div>
+      {asOfDate && (
+        <div className="mb-4 px-4 py-2 bg-mm-gold/10 border border-mm-gold/20 rounded-xl flex items-center gap-2">
+          <span className="icon-sm text-mm-gold">history</span>
+          <span className="text-xs text-mm-gold font-semibold">Viewing standings as of {new Date(asOfDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+        </div>
+      )}
 
       {/* Challenge Progress Banner */}
       <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-6 mb-6 relative overflow-hidden">

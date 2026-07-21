@@ -32,14 +32,18 @@ export interface TeamRanking {
  * 3. Fewer substitutions (tiebreaker)
  * 4. Fewer rejections (tiebreaker)
  */
-export async function computePlayerRankings(teamId?: string): Promise<PlayerRanking[]> {
+export async function computePlayerRankings(teamId?: string, asOfDate?: Date): Promise<PlayerRanking[]> {
   const where: any = {};
   if (teamId) where.teamId = teamId;
 
   // Get challenge date range
   const challenge = await prisma.challengeConfig.findFirst({ where: { isActive: true } });
   const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-  const dateFilter = challenge ? { gte: new Date(challenge.startDate.getTime() - IST_OFFSET), lte: new Date(challenge.endDate.getTime() + IST_OFFSET) } : undefined;
+  const startFilter = challenge ? new Date(challenge.startDate.getTime() - IST_OFFSET) : undefined;
+  const endFilter = asOfDate
+    ? new Date(asOfDate.getTime() + IST_OFFSET) // end of selected day in IST
+    : challenge ? new Date(challenge.endDate.getTime() + IST_OFFSET) : undefined;
+  const dateFilter = startFilter ? { gte: startFilter, ...(endFilter && { lte: endFilter }) } : undefined;
 
   const players = await prisma.player.findMany({
     where,
@@ -105,8 +109,8 @@ export async function computePlayerRankings(teamId?: string): Promise<PlayerRank
 /**
  * Compute team rankings (aggregate of player rankings)
  */
-export async function computeTeamRankings(): Promise<TeamRanking[]> {
-  const playerRankings = await computePlayerRankings();
+export async function computeTeamRankings(asOfDate?: Date): Promise<TeamRanking[]> {
+  const playerRankings = await computePlayerRankings(undefined, asOfDate);
 
   // Aggregate by team
   const teamMap = new Map<string, TeamRanking>();
