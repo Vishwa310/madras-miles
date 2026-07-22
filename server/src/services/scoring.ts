@@ -41,7 +41,7 @@ export async function computePlayerRankings(teamId?: string, asOfDate?: Date): P
   const IST_OFFSET = 5.5 * 60 * 60 * 1000;
   const startFilter = challenge ? new Date(challenge.startDate.getTime() - IST_OFFSET) : undefined;
   const endFilter = asOfDate
-    ? new Date(asOfDate.getTime() + IST_OFFSET) // end of selected day in IST
+    ? new Date(asOfDate.getTime() + 24 * 60 * 60 * 1000 - IST_OFFSET) // end of selected day in IST (next day 00:00 IST in UTC)
     : challenge ? new Date(challenge.endDate.getTime() + IST_OFFSET) : undefined;
   const dateFilter = startFilter ? { gte: startFilter, ...(endFilter && { lte: endFilter }) } : undefined;
 
