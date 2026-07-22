@@ -40,7 +40,8 @@ substitutionsRouter.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: `Team has used all ${maxCredits} substitution credits (${usedCredits}/${maxCredits} used)` });
     }
 
-    const effectiveFrom = effectiveDate ? new Date(effectiveDate) : new Date();
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+    const effectiveFrom = effectiveDate ? new Date(new Date(effectiveDate).getTime() - IST_OFFSET_MS) : new Date();
 
     const result = await prisma.$transaction(async (tx) => {
       // Sub out: set to STANDBY (not RETIRED — they can come back)
