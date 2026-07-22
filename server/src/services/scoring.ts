@@ -138,12 +138,12 @@ export async function computeTeamRankings(asOfDate?: Date): Promise<TeamRanking[
 
   const teamRankings = Array.from(teamMap.values());
 
-  // Sort by same tiebreaker logic
+  // Sort: 1. Total KM (desc), 2. Fewer activities wins (asc), 3. Fewer sub credits used (asc), 4. Alphabetical
   teamRankings.sort((a, b) => {
     if (b.totalKm !== a.totalKm) return b.totalKm - a.totalKm;
-    if (b.totalActivities !== a.totalActivities) return b.totalActivities - a.totalActivities;
+    if (a.totalActivities !== b.totalActivities) return a.totalActivities - b.totalActivities;
     if (a.substitutionCount !== b.substitutionCount) return a.substitutionCount - b.substitutionCount;
-    return a.rejectedCount - b.rejectedCount;
+    return a.teamName.localeCompare(b.teamName);
   });
 
   teamRankings.forEach((r, i) => { r.rank = i + 1; });
