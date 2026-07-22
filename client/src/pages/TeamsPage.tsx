@@ -234,7 +234,7 @@ export default function TeamsPage() {
                       <span className="text-mm-text-muted"> — {log.details}</span>
                     </div>
                     <div className="text-[0.6rem] text-mm-text-muted mt-0.5">
-                      {new Date(log.createdAt).toLocaleString()} · {log.action.replace('_', ' ')}
+                      Executed at: {new Date(log.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · {log.action.replace('_', ' ')}
                     </div>
                   </div>
                 </div>

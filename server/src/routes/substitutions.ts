@@ -77,9 +77,11 @@ substitutionsRouter.post('/', async (req: Request, res: Response) => {
 
     // Audit logging
     await logAudit(retired.teamId, 'substitution', result.retiredPlayer.user.name,
-      `Subbed out → ${result.substitutePlayer.user.name} (credit ${usedCredits + 1}/${maxCredits})`, req.user!.userId);
+    const effectiveDateIST = new Date(effectiveFrom.getTime() + 5.5 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    await logAudit(retired.teamId, 'substitution', result.retiredPlayer.user.name,
+      `Subbed out → ${result.substitutePlayer.user.name} | Effective: ${effectiveDateIST} (credit ${usedCredits + 1}/${maxCredits})`, req.user!.userId);
     await logAudit(retired.teamId, 'substitution', result.substitutePlayer.user.name,
-      `Subbed in (replacing ${result.retiredPlayer.user.name})`, req.user!.userId);
+      `Subbed in (replacing ${result.retiredPlayer.user.name}) | Effective: ${effectiveDateIST}`, req.user!.userId);
 
     return res.status(201).json({
       substitution: result,
