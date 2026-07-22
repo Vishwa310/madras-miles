@@ -571,9 +571,11 @@ syncRouter.post('/auto', authorize('ADMIN'), async (req: Request, res: Response)
 
 /**
  * Calculate the next valid sync time based on schedule
+ * Times are treated as IST (UTC+5:30) since server runs in UTC
  */
 function calculateNextSyncTime(schedule: any, intervalHours: number): Date {
   const now = new Date();
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 
   if (!schedule || schedule.frequency === 'hourly') {
     return new Date(now.getTime() + intervalHours * 60 * 60 * 1000);
@@ -581,18 +583,30 @@ function calculateNextSyncTime(schedule: any, intervalHours: number): Date {
 
   const [targetH, targetM] = (schedule.syncTime || '06:00').split(':').map(Number);
 
+  // Convert IST target time to UTC: subtract 5:30
+  const targetUTCH = targetH - 5;
+  const targetUTCM = targetM - 30;
+
+  function setISTTime(d: Date): Date {
+    const result = new Date(d);
+    result.setUTCHours(targetUTCH, targetUTCM, 0, 0);
+    // Handle negative minutes/hours
+    if (targetUTCM < 0) {
+      result.setUTCHours(targetUTCH - 1, targetUTCM + 60, 0, 0);
+    }
+    return result;
+  }
+
   if (schedule.frequency === 'daily') {
-    const next = new Date(now);
-    next.setHours(targetH, targetM, 0, 0);
+    const next = setISTTime(now);
     if (next <= now) next.setDate(next.getDate() + 1);
     return next;
   }
 
   if (schedule.frequency === 'alternate') {
-    const next = new Date(now);
-    next.setHours(targetH, targetM, 0, 0);
+    const next = setISTTime(now);
     if (next <= now) next.setDate(next.getDate() + 2);
-    else next.setDate(next.getDate() + 1); // next day at minimum for alternate
+    else next.setDate(next.getDate() + 1);
     return next;
   }
 
@@ -600,19 +614,18 @@ function calculateNextSyncTime(schedule: any, intervalHours: number): Date {
     const days: number[] = schedule.days || [];
     if (days.length === 0) return new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-    // Days are 0=Mon...6=Sun, JS getDay is 0=Sun...6=Sat
-    // Convert: JS day to our format: (jsDay + 6) % 7
     for (let offset = 0; offset < 8; offset++) {
       const candidate = new Date(now);
       candidate.setDate(candidate.getDate() + offset);
-      candidate.setHours(targetH, targetM, 0, 0);
-      const ourDay = (candidate.getDay() + 6) % 7; // 0=Mon...6=Sun
+      const withTime = setISTTime(candidate);
+      // Get day of week in IST
+      const istDate = new Date(withTime.getTime() + IST_OFFSET_MS);
+      const ourDay = (istDate.getDay() + 6) % 7; // 0=Mon...6=Sun
 
-      if (days.includes(ourDay) && candidate > now) {
-        return candidate;
+      if (days.includes(ourDay) && withTime > now) {
+        return withTime;
       }
     }
-    // Fallback: next week
     return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   }
 
