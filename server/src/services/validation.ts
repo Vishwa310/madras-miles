@@ -160,8 +160,13 @@ export async function isRestDay(playerId: string, date: Date): Promise<boolean> 
   const challengeEnd = new Date(challenge.endDate);
   challengeEnd.setHours(23, 59, 59, 999);
 
-  // Determine which week this date falls in
-  const daysSinceStart = Math.floor((date.getTime() - challengeStart.getTime()) / (1000 * 60 * 60 * 24));
+  // Determine which week this date falls in (using IST dates)
+  const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+  const dateIST = new Date(date.getTime() + IST_OFFSET);
+  const startIST = new Date(challengeStart.getTime() + IST_OFFSET);
+  const dateISTDay = new Date(dateIST.toISOString().split('T')[0]);
+  const startISTDay = new Date(startIST.toISOString().split('T')[0]);
+  const daysSinceStart = Math.floor((dateISTDay.getTime() - startISTDay.getTime()) / (1000 * 60 * 60 * 24));
   const weekIndex = Math.floor(daysSinceStart / 7);
 
   const weekStart = new Date(challengeStart);
