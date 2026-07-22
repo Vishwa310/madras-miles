@@ -263,8 +263,8 @@ export default function SyncPage() {
             {(schedule.frequency === 'daily' || schedule.frequency === 'alternate') && (
               <div>
                 <span className="text-xs text-mm-text-muted uppercase tracking-wider">Sync at</span>
-                <div className="flex gap-2 mt-2">
-                  {['06:00', '08:00', '10:00', '12:00', '18:00', '21:00'].map(t => (
+                <div className="flex items-center gap-2 mt-2">
+                  {['06:00', '08:00', '10:00', '18:00', '21:00'].map(t => (
                     <button key={t} onClick={() => updateSchedule({ ...schedule, syncTime: t })}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                         schedule.syncTime === t ? 'gradient-hero text-white' : 'bg-mm-bg-elevated border border-mm-border text-mm-text-secondary hover:text-white'
@@ -272,6 +272,8 @@ export default function SyncPage() {
                       {t}
                     </button>
                   ))}
+                  <input type="time" value={schedule.syncTime} onChange={e => updateSchedule({ ...schedule, syncTime: e.target.value })}
+                    className="px-3 py-1.5 bg-mm-bg-elevated border border-mm-border rounded-lg text-xs font-semibold focus:border-mm-orange outline-none w-24" />
                 </div>
               </div>
             )}
@@ -295,7 +297,7 @@ export default function SyncPage() {
                 </div>
                 <div className="mt-2">
                   <span className="text-xs text-mm-text-muted uppercase tracking-wider">At</span>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex items-center gap-2 mt-2">
                     {['06:00', '08:00', '10:00', '18:00', '21:00'].map(t => (
                       <button key={t} onClick={() => updateSchedule({ ...schedule, syncTime: t })}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
@@ -304,6 +306,8 @@ export default function SyncPage() {
                         {t}
                       </button>
                     ))}
+                    <input type="time" value={schedule.syncTime} onChange={e => updateSchedule({ ...schedule, syncTime: e.target.value })}
+                      className="px-3 py-1.5 bg-mm-bg-elevated border border-mm-border rounded-lg text-xs font-semibold focus:border-mm-orange outline-none w-24" />
                   </div>
                 </div>
               </div>
