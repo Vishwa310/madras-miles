@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toPng } from 'html-to-image';
 import { api } from '../lib/api';
 import { PageLoader } from '../lib/loaders';
 
@@ -16,6 +17,32 @@ export default function AdminDashboard() {
   const [asOfDate, setAsOfDate] = useState('');
   const [syncLog, setSyncLog] = useState<{ player: string; status: string; activities?: number; accepted?: number; rejected?: number; reason?: string }[]>([]);
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, currentPlayer: '' });
+  const leaderboardRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  async function downloadLeaderboard() {
+    if (!leaderboardRef.current) return;
+    setDownloading(true);
+    try {
+      const el = leaderboardRef.current;
+      const dataUrl = await toPng(el, {
+        pixelRatio: 3,
+        backgroundColor: '#0f1419',
+        width: el.scrollWidth + 64,
+        height: el.scrollHeight + 64,
+        style: { padding: '32px', margin: '0' },
+        filter: (node) => !node.classList?.contains('no-capture'),
+      });
+      const link = document.createElement('a');
+      const dateStr = asOfDate || new Date().toLocaleDateString('en-CA');
+      link.download = `madras-walkathon-leaderboard-${dateStr}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to generate image:', err);
+    }
+    setDownloading(false);
+  }
 
   useEffect(() => { loadData(); }, []);
   useEffect(() => { if (!loading) loadData(); }, [asOfDate]);
@@ -192,49 +219,59 @@ export default function AdminDashboard() {
       </div>
 
       {/* Team Leaderboard — Full Width */}
-      <div className="mb-6">
-        {/* Team Leaderboard — Horizontal Bar Style */}
-        <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-6">
-          <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-mm-text-muted mb-5 flex items-center gap-2">
-            <span className="icon-sm text-mm-gold">emoji_events</span> Team Distance Overview
-          </h3>
-          <div className="space-y-4">
+      <div ref={leaderboardRef} className="mb-6 space-y-6">
+        {/* Branding header — visible in screenshot */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🏃</span>
+            <div>
+              <h2 className="font-display text-xl font-bold uppercase tracking-wide">{challenge?.name || 'Madras Walkathon'}</h2>
+              <p className="text-sm text-mm-text-muted">
+                {asOfDate
+                  ? `Standings as of ${new Date(asOfDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                  : `Live standings — ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+              </p>
+            </div>
+          </div>
+          <button onClick={downloadLeaderboard} disabled={downloading}
+            className="flex items-center gap-2 px-4 py-2 bg-mm-bg-card border border-mm-border rounded-xl text-sm font-semibold hover:border-mm-teal/50 transition disabled:opacity-50 no-capture">
+            <span className={`icon-sm text-mm-teal ${downloading ? 'animate-spin' : ''}`}>{downloading ? 'progress_activity' : 'download'}</span>
+            {downloading ? 'Generating...' : 'Share'}
+          </button>
+        </div>
+
+        {/* Team Leaderboard — Scoreboard Style */}
+        <div className="bg-mm-bg-card border border-mm-border rounded-2xl p-8">
+          <div className="space-y-1">
             {leaderboard.map(t => {
               const maxKm = leaderboard[0]?.totalKm || 1;
-              const barWidth = Math.max(5, (t.totalKm / maxKm) * 100);
+              const barWidth = Math.max(8, (t.totalKm / maxKm) * 100);
               return (
-                <div key={t.teamId} className="flex items-center gap-4">
-                  {/* Rank circle */}
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 border-2"
+                <div key={t.teamId} className="flex items-center gap-5 py-4 border-b border-mm-border/50 last:border-0">
+                  {/* Rank */}
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0 border-2"
                     style={{ borderColor: t.teamEmblem, color: t.teamEmblem }}>
                     {t.rank}
                   </div>
-                  {/* Team name + members */}
-                  <div className="w-36 flex-shrink-0">
-                    <div className="text-sm font-semibold">{t.teamName}</div>
-                    <div className="text-[0.6rem] text-mm-text-muted">{t.totalActivities} activities</div>
-                  </div>
-                  {/* Progress bar */}
-                  <div className="flex-1 h-8 bg-mm-bg-primary rounded-full overflow-hidden relative">
-                    <div className="h-full rounded-full transition-all duration-700 relative"
-                      style={{ width: `${barWidth}%`, background: `linear-gradient(90deg, ${t.teamEmblem}88, ${t.teamEmblem})` }}>
-                      <div className="absolute inset-0 rounded-full opacity-30"
-                        style={{ background: `linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 60%)` }} />
+                  {/* Team name + bar underneath */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-lg font-bold mb-1.5" style={{ color: t.teamEmblem }}>{t.teamName}</div>
+                    <div className="h-2.5 bg-mm-bg-primary rounded-full overflow-hidden">
+                      <div className="h-full rounded-full"
+                        style={{ width: `${barWidth}%`, background: `linear-gradient(90deg, ${t.teamEmblem}66, ${t.teamEmblem})` }} />
                     </div>
                   </div>
-                  {/* Stats */}
-                  <div className="text-right flex-shrink-0 w-28">
-                    <div className="font-display text-lg font-bold truncate" style={{ color: t.teamEmblem }}>Kms: {t.totalKm.toFixed(2)}</div>
-                    <div className="text-xs font-semibold" style={{ color: t.teamEmblem, opacity: 0.7 }}>Activities: {t.totalActivities}</div>
-                    <div className="text-xs font-semibold" style={{ color: t.teamEmblem, opacity: 0.7 }}>Subs: {t.substitutionCount}</div>
+                  {/* Distance — BIG */}
+                  <div className="text-right flex-shrink-0 pl-4">
+                    <div className="font-display text-3xl font-black tracking-tight" style={{ color: t.teamEmblem }}>{t.totalKm.toFixed(1)}<span className="text-lg ml-1 opacity-70">km</span></div>
+                    <div className="text-sm text-mm-text-muted mt-0.5">{t.totalActivities} walks · {t.substitutionCount} subs</div>
                   </div>
                 </div>
               );
             })}
-            {leaderboard.length === 0 && <p className="text-mm-text-muted text-sm text-center py-4">No data yet — sync to populate</p>}
+            {leaderboard.length === 0 && <p className="text-mm-text-muted text-base text-center py-4">No data yet — sync to populate</p>}
           </div>
         </div>
-
       </div>
 
       {/* Top Players */}
