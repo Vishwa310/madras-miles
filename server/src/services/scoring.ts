@@ -100,19 +100,18 @@ export async function computePlayerRankings(teamId?: string, asOfDate?: Date): P
     return a.rejectedCount - b.rejectedCount;
   });
 
-  // Assign ranks (tied players get same rank)
+  // Assign ranks — dense ranking (tied players get same rank, next rank increments by 1)
   for (let i = 0; i < rankings.length; i++) {
     if (i === 0) {
       rankings[i].rank = 1;
     } else {
       const prev = rankings[i - 1];
       const curr = rankings[i];
-      // Same rank if all tiebreaker values are equal
       if (curr.totalKm === prev.totalKm && curr.totalActivities === prev.totalActivities &&
           curr.substitutionCount === prev.substitutionCount && curr.rejectedCount === prev.rejectedCount) {
         curr.rank = prev.rank;
       } else {
-        curr.rank = i + 1;
+        curr.rank = prev.rank + 1;
       }
     }
   }
@@ -160,19 +159,18 @@ export async function computeTeamRankings(asOfDate?: Date): Promise<TeamRanking[
     return a.teamName.localeCompare(b.teamName);
   });
 
-  // Assign ranks (tied teams get same rank)
+  // Assign ranks — dense ranking (tied teams get same rank, next rank increments by 1)
   for (let i = 0; i < teamRankings.length; i++) {
     if (i === 0) {
       teamRankings[i].rank = 1;
     } else {
       const prev = teamRankings[i - 1];
       const curr = teamRankings[i];
-      // Same rank if all tiebreaker values are equal
       if (curr.totalKm === prev.totalKm && curr.totalActivities === prev.totalActivities &&
           curr.substitutionCount === prev.substitutionCount) {
         curr.rank = prev.rank;
       } else {
-        curr.rank = i + 1;
+        curr.rank = prev.rank + 1;
       }
     }
   }
